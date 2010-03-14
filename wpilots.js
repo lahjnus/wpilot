@@ -9,6 +9,7 @@
 //
 var sys       = require('sys'),
     path      = require('path'),
+    fs        = require('fs'),
     fu        = require('./lib/fu');
     ws        = require('./lib/ws'),
     optparse  = require('./lib/optparse'),
@@ -21,9 +22,6 @@ var _  = match.incl;
 process.mixin(require('./lib/gameobjects'));
 
 const SERVER_VERSION       = '0.8';
-
-const RE_POLICY_REQ = /<\s*policy\-file\-request\s*\/>/i,
-      POLICY_RES    = "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>";
 
 // Message priorities. High priority messages are sent to client no mather
 // what. Low priority messages are sent only if client can afford them.
@@ -38,33 +36,50 @@ const DISCONNECTED  = -1;
       HANDSHAKING   = 3,
       JOINED        = 4;      
 
+// Default map. This map is used if no other map i specified.
+const DEFAULT_MAP   = {
+	name: 'Battle Royale',
+	author: 'Johan Dahlberg',
+	recommended_players: 8,
+
+	data: [
+		[51,  0,  0, 51,  0,  0, 51],
+		[ 0, 11, 11,  0, 11, 11,  0],
+		[ 0, 11, 52,  0, 52, 11,  0],
+		[51,  0,  0, 12,  0,  0, 51],
+		[ 0, 11, 52,  0, 52, 11,  0],
+		[ 0, 11, 11,  0, 11, 11,  0],
+		[51,  0,  0, 51,  0,  0, 51]
+	]
+}; 
+
 // Command line option parser switches
 const SWITCHES = [
   ['-d', '--debug',               'Enables debug mode (Default: false)'],
   ['-H', '--help',                'Shows this help section'],
-  ['-p', '--serve_flash_policy',  'Enables the Flash Socket Policy Server, must be run as root (Default: false)'],
   ['--name NAME',                 'The name of the server.'],
   ['--host HOST',                 'The host adress (default: 127.0.0.1).'],
+  ['--admin_password PASSWORD',   'Admin password (default: "none").'],
+  ['--map PATH',                  'Path to world map (default: built-in map).'],
   ['--pub_host HOST',             'Set if the public host differs from the local one'],
   ['--http_port PORT',            'Port number for the HTTP server (default: 6114)'],
   ['--ws_port PORT',              'Port number for the WebSocket server (default: 6115)'],
   ['--pub_ws_port PORT',          'Set if the public WebSocket port differs from the local one'],
-  ['--policy_port PORT',          'Port number for the Flash Policy server (default: 843)'],
   ['--max_rate NUMBER',           'The maximum rate per client and second (default: 1000)'],
   ['--max_players NUMBER',        'Max connected players allowed in server simultaneously (default: 8)'],
-  ['--world_width NUMBER',        'The world width (Default: 1000)'],
-  ['--world_height NUMBER',       'The world height (Default: 1000)'],
-  ['--r_start_delay NUMBER',      'Rule: Time before game starts after warmup (Default: 300)'],
   ['--r_respawn_time NUMBER',     'Rule: Player respawn time after death. (Default: 500)'],
-  ['--r_w_respawn_time NUMBER',   'Rule: Warm-up respawn time after death. (Default: 100)'],
   ['--r_reload_time NUMBER',      'Rule: The reload time after fire. (Default: 15)'],
   ['--r_shoot_cost NUMBER',       'Rule: Energy cost of shooting a bullet. (Default: 800)'],
   ['--r_shield_cost NUMBER',      'Rule: Energy cost of using the shield. (Default: 70)'],
   ['--r_energy_recovery NUMBER',  'Rule: Energy recovery unit (Default: 40)'],
   ['--r_round_limit NUMBER',      'Rule: Round score limit (Default: 10)'],
-  ['--r_round_rs_time NUMBER',    'Rule: Restart time after round finished (Default: 600)'],
   ['--r_suicide_penelty NUMBER',  'Rule: The cost for suicides (Default: 1)'],
-  ['--r_kill_score NUMBER',       'Rule: The price of a kill (Default: 1)']
+  ['--r_kill_score NUMBER',       'Rule: The price of a kill (Default: 1)'],
+  ['--r_powerup_max NUMBER',      'Rule: Max no of powerups to spawn (Default: 3)'],
+  ['--r_powerup_respawn NUMBER',  'Rule: Time between powerup respawns (Default: 1200)'],
+  ['--r_powerup_speed_t NUMBER',  'Rule: Time before the speed powerup decline (Default: 700)'],
+  ['--r_powerup_rapid_t NUMBER',  'Rule: Time before the rapid fire powerup decline (Default: 600)'],
+  ['--r_powerup_energy_t NUMBER', 'Rule: Time before the energy boost powerup decline (Default: 800)']
 ];
 
 // Default server options
@@ -72,78 +87,67 @@ const DEFAULT_OPTIONS = {
   debug:                true, 
   name:                 'WPilot Server',
   host:                 '127.0.0.1',
+  admin_password:       null,
+  map:                  null, 
   pub_host:             null,
   http_port:            6114,
   ws_port:              6115,
   pub_ws_port:          null,
   max_players:          8,
-  policy_port:          843,
   max_rate:             5000,
-  serve_flash_policy:   false,
-  world_width:          1000,
-  world_height:         1000,
-  r_start_delay:        200,
   r_respawn_time:       400,
-  r_w_respawn_time:     100,
   r_reload_time:        15,
   r_shoot_cost:         300,
-  r_shield_cost:        70,
-  r_energy_recovery:    40,
+  r_shield_cost:        30,
+  r_energy_recovery:    30,
   r_round_limit:        10,
-  r_round_rs_time:      600,
   r_suicide_penelty:    1,
-  r_kill_score:         1
+  r_kill_score:         1,
+  r_powerup_max:        2,
+  r_powerup_respawn:    600,
+  r_powerup_speed_t:    700,
+  r_powerup_rapid_t:    600,
+  r_powerup_energy_t:   800
 };
 
 // Paths to all files that should be server to client.
 const CLIENT_DATA = [
-  'client/index.html',
-  'client/style.css',
-  'client/logo.png',
-  'client/space.jpg',
-  'client/wpilot.js',
-  'client/devices.js',
-  'lib/gameobjects.js',
-  'lib/match.js',
-  'client/web_socket.js',
-  'client/swfobject.js',
-  'client/FABridge.js',
-  'client/particle.js',
-  'lib/sylvester.js',
-  'client/WebSocketMain.swf',
-  'client/crossdomain.xml' 
-];
-
-// Player colors
-const PLAYER_COLORS = [
-  '255,176,0',
-  '51,182,255',
-  '172,48,224',
-  '230,21,90',
-  '166,219,0',
-  '125,142,22',
-  '244,52, 0',
-  '199,244,136',
-  '227,111,160',
-  '63,140,227',
-  '227,126,76',
-  '134,213,227'
-];
-
-// Player names
-const PLAYER_NAMES = [
-  'Boba Fett', 
-  'Han Solo', 
-  'Luke Skywalker', 
-  'Princess Leia',
-  'R2-D2',
-  'C-3PO',
-  'Chewbacca',
-  'Darth Vader',
-  'Lando',
-  'Yoda',
-  'Teboo',
-  'Admiral Ackbar'
+  'client/index.html', '',
+  'client/style.css', '',
+  'client/logo.png', '',
+  'client/space.jpg', '',
+  'client/wpilot.js', '',
+  'client/devices.js', '',
+  'lib/gameobjects.js', '',
+  'lib/match.js', 'lib/',
+  'client/sound/background.m4a', 'sound/',
+  'client/sound/ship_spawn.m4a','sound/',
+  'client/sound/ship_die.m4a', 'sound/',
+  'client/sound/ship_thrust.m4a', 'sound/',
+  'client/sound/ship_fire_1.m4a', 'sound/',
+  'client/sound/ship_fire_2.m4a', 'sound/',
+  'client/sound/ship_fire_3.m4a', 'sound/',
+  'client/sound/powerup_spawn.m4a', 'sound/',
+  'client/sound/powerup_1_die.m4a', 'sound/',
+  'client/sound/powerup_2_die.m4a', 'sound/',
+  'client/sound/powerup_3_die.m4a', 'sound/',
+  'client/sound/background.ogg', 'sound/',
+  'client/sound/ship_spawn.ogg', 'sound/',
+  'client/sound/ship_die.ogg', 'sound/',
+  'client/sound/ship_thrust.ogg', 'sound/',
+  'client/sound/ship_fire_1.ogg', 'sound/',
+  'client/sound/ship_fire_2.ogg', 'sound/',
+  'client/sound/ship_fire_3.ogg', 'sound/',
+  'client/sound/powerup_spawn.ogg', 'sound/',
+  'client/sound/powerup_1_die.ogg', 'sound/',
+  'client/sound/powerup_2_die.ogg', 'sound/',
+  'client/sound/powerup_3_die.ogg', 'sound/',
+  'client/web_socket.js', 'lib/',
+  'client/swfobject.js', 'lib/',
+  'client/FABridge.js', 'lib/',
+  'client/particle.js', 'lib/',
+  'client/WebSocketMain.swf', 'lib/',
+  'client/crossdomain.xml', 'lib/'
 ];
 
 /**
@@ -155,15 +159,18 @@ function main() {
       shared          = { get_state: function() {} },
       webserver       = null,
       gameserver      = null,
-      policy_server   = null;
+      policy_server   = null,
+      maps            = null;
 
   if (!options) return;
 
   sys.puts('WPilot server ' + SERVER_VERSION);
   
+  maps = options.maps;
+  
   webserver = start_webserver(options, shared);
-  gameserver = start_gameserver(options, shared);
-  policy_server = options.serve_flash_policy ? start_policy_server(options) : null;
+  gameserver = start_gameserver(maps, options, shared);
+  
 }
 
 /**
@@ -172,15 +179,14 @@ function main() {
  *  @returns {WebSocketServer} Returns the newly created WebSocket server 
  *                             instance.
  */
-function start_gameserver(options, shared) {
+function start_gameserver(maps, options, shared) {
   var connections     = {},
       gameloop        = null,
       world           = null,
       server          = null,
       conn_id         = 1,
-      post_tick       = 1,
-      rules           = get_rules(options);
-  
+      update_tick     = 1,
+      next_map_index  = 0;
   
   // Is called by the web instance to get current state
   shared.get_state = function() {
@@ -188,13 +194,11 @@ function start_gameserver(options, shared) {
       server_name:      options.name,
       game_server_url:  'ws://' + (options.pub_host || options.host) + ':' + 
                                 (options.pub_ws_port || options.ws_port) + '/',
+      map_name:         world.map_name,
       max_players:      options.max_players,
       no_players:       world.no_players,
       no_ready_players: world.no_ready_players,
-      flash_compatible: options.serve_flash_policy,
-      world_width:      options.world_width,
-      world_height:     options.world_height,
-      rules:            rules
+      rules:            world.rules
     }
   }
 
@@ -212,21 +216,19 @@ function start_gameserver(options, shared) {
   }
   
   // Create the world instance
-  world = new World({
-    rules: rules,
-    size: [options.world_width, options.world_height],
-    server_mode: true
-  });
+  world = new World(true);
+  world.max_players = options.max_players,
   
   // Listen for round state changes
   world.on_round_state_changed = function(state, winners) {
-    broadcast(WORLD + STATE, state, winners);
+    broadcast(OP_ROUND_STATE, state, winners);
   }
 
   // Listen for events on player
   world.on_player_join = function(player) {
+    player.name = get_unique_name(world.players, player.id, player.name);
     broadcast_each(
-      [PLAYER + CONNECT, player.id, player.name, player.color],
+      [OP_PLAYER_CONNECT, player.id, player.name],
       function(msg, conn) {
         if (player.id == conn.id) {
           return PRIO_PASS;
@@ -237,35 +239,38 @@ function start_gameserver(options, shared) {
   }
   
   world.on_player_spawn = function(player, pos) {
-    broadcast(PLAYER + SPAWN, player.id, pos);
+    broadcast(OP_PLAYER_SPAWN, player.id, pos);
   }
 
   world.on_player_died = function(player, old_entity, death_cause, killer) {
-    broadcast(PLAYER + DIE, player.id, death_cause, killer ? killer.id : -1);
+    broadcast(OP_PLAYER_DIE, player.id, death_cause, killer ? killer.id : -1);
   }
   
   world.on_player_ready = function(player) {
-    broadcast(PLAYER + READY, player.id);
-  }
-  
-  world.on_player_command = function(player, command) {
-    broadcast_each(
-      [PLAYER + COMMAND, player.id, command],
-      function(msg, conn) {
-        if (player.id == conn.id) {
-          return PRIO_PASS;
-        } 
-        return PRIO_HIGH;
-      }
-    );
+    broadcast(OP_PLAYER_INFO, player.id, 0, true);
   }
 
-  world.on_player_fire = function(player, angle) {
-   broadcast(PLAYER + FIRE, player.id, angle);
+  world.on_player_name_changed = function(player, new_name, old_name) {
+    player.name = get_unique_name(world.players, player.id, new_name);
+    broadcast(OP_PLAYER_INFO, player.id, 0, 0, player.name);
+  }
+  
+  world.on_player_fire = function(player, angle, pos, vel) {
+   broadcast(OP_PLAYER_FIRE, player.id, angle, pos, vel);
   }
   
   world.on_player_leave = function(player, reason) {
-    broadcast(PLAYER + DISCONNECT, player.id, reason);
+    broadcast(OP_PLAYER_DISCONNECT, player.id, reason);
+  }
+  
+  world.on_powerup_spawn = function(powerup) {
+    broadcast(OP_POWERUP_SPAWN, powerup.powerup_id, 
+                               powerup.powerup_type, 
+                               powerup.pos);
+  }
+  
+  world.on_powerup_die = function(powerup, player) {
+    broadcast(OP_POWERUP_DIE, powerup.powerup_id, player.id);
   }
   
   /**
@@ -273,8 +278,9 @@ function start_gameserver(options, shared) {
    *  @return {undefined} Nothing
    */
   function start_gameloop() {
-    log('Creating server World...');
-    world.build();
+
+    // Reset game world
+    world.build(world.map_data, world.rules);
 
     gameloop = new GameLoop();
     gameloop.ontick = gameloop_tick;
@@ -294,26 +300,38 @@ function start_gameserver(options, shared) {
       connections[id].kill(reason || 'Server is shutting down');
     }
     
-    world.reset();
-
-    gameloop.kill();
-    gameloop = null;
+    if (gameloop) {
+      gameloop.ontick = null;
+      gameloop.kill();
+      gameloop = null;
+    }
   }  
 
   function post_update() {
-    post_tick++;
+    update_tick++;
     for (var id in connections) {
+      var time = get_time();
       var connection = connections[id];
-      if (post_tick % connection.update_rate != 0) {
+      if (connection.last_ping + 2000 < time) {
+        connection.last_ping = time;
+        connection.write(JSON.stringify([PING_PACKET]));
+      }
+      if (update_tick % connection.update_rate != 0) {
         continue;
       }
       for (var id in world.players) {
         var player = world.players[id];
+        var message = [OP_PLAYER_STATE, player.id];
         if (player.entity) {
-          connection.queue([PLAYER + STATE, 
-                            player.id, 
-                            pack_vector(player.entity.pos)]);
+          message.push(pack_vector(player.entity.pos), player.entity.angle, 
+                                                       player.entity.action);
+          connection.queue(message);
         }
+        if (update_tick % 200 == 0) {
+          var player_connection = connections[player.id];
+          connection.queue([OP_PLAYER_INFO, player.id, player_connection.ping]);
+        }
+        
       }
     }    
   }
@@ -340,7 +358,7 @@ function start_gameserver(options, shared) {
       
       // The world is waiting for players to be "ready". The game starts when 
       // 60% of the players are ready.
-      case ROUND_WAITING:
+      case ROUND_WARMUP:
         if (world.no_players > 1 && world.no_ready_players >= (world.no_players * 0.6)) {
           world.set_round_state(ROUND_STARTING);
         }
@@ -349,7 +367,7 @@ function start_gameserver(options, shared) {
       // Round is starting. Server aborts if a player leaves the game.
       case ROUND_STARTING:
         if (world.no_ready_players < (world.no_players * 0.6)) {
-          world.set_round_state(ROUND_WAITING);
+          world.set_round_state(ROUND_WARMUP);
           return;
         }
         if (t >= world.r_timer) {
@@ -361,7 +379,7 @@ function start_gameserver(options, shared) {
       case ROUND_RUNNING:
         var winners = [];
         world.forEachPlayer(function(player) {
-          if (player.score == rules.round_limit) {
+          if (player.score == world.rules.round_limit) {
             winners.push(player.id);
           }
         });
@@ -373,7 +391,16 @@ function start_gameserver(options, shared) {
       // The round is finished. Wait for restart
       case ROUND_FINISHED:
         if (t >= world.r_timer) {
-          world.set_round_state(ROUND_WAITING);
+          gameloop.ontick = null;
+          gameloop.kill();
+          load_map(null, true, function() {
+            var t = 0;
+            for(var id in connections) {
+              var conn = connections[id];
+              conn.write(JSON.stringify([OP_WORLD_RECONNECT]));
+              conn.set_state(HANDSHAKING);
+            }
+          });
         }
         break;
     }
@@ -388,6 +415,7 @@ function start_gameserver(options, shared) {
   function broadcast() {
     var msg = Array.prototype.slice.call(arguments);
     for(var id in connections) {
+      var conn = connections[id];
       connections[id].queue(msg);
     }
   }
@@ -400,8 +428,11 @@ function start_gameserver(options, shared) {
    */
   function broadcast_each(msg, callback) {
     for(var id in connections) {
-      var prio = callback(msg, connections[id]);
-      if (prio) connections[id].queue(msg);
+      var conn = connections[id];
+      if (conn.state == JOINED) {
+        var prio = callback(msg, conn);
+        if (prio) conn.queue(msg);
+      }
     }
   }
   
@@ -415,21 +446,90 @@ function start_gameserver(options, shared) {
   }
   
   /**
+   *  Load a map
+   *  @param path {String} path to map. 
+   *  @param default_on_fail {Boolean} loads the default map if the specified 
+   *                                   map failed to load.
+   *  @return {undefined} Nothing
+   */
+  function load_map(path, default_on_fail, callback) {
+    var map_path = path;
+
+    function done(err, map_data) {
+      if (!map_data && default_on_fail) {
+        map_data = DEFAULT_MAP;
+      }
+
+      if (map_data) {
+        
+        if (gameloop) {
+          gameloop.ontick = null;
+          gameloop.kill();
+        }
+        
+        world.build(map_data, get_rules(DEFAULT_OPTIONS, map_data.rules || {}, 
+                                                                options.rules));
+                                                                
+        if (gameloop) {
+          gameloop = new GameLoop();
+          gameloop.ontick = gameloop_tick;
+          gameloop.start();
+        }
+                                                                
+      }
+      callback(err);
+    }
+    
+    if (!map_path) {
+      if (maps.length == 0) {
+        done(null, DEFAULT_MAP);
+        return;
+      } else {
+        if (next_map_index >= maps.length) {
+          next_map_index = 0;
+        }
+        map_path = maps[next_map_index];
+        next_map_index++;
+      }
+    } 
+
+    fs.readFile(map_path, function (err, data) {
+      if (err) {
+        done('Failed to read map: ' + err);
+        return;
+      }
+      try {
+        done(null, JSON.parse(data));
+      } catch(e) {
+        done('Map file is invalid, bad format');
+        return;
+      }
+    });
+  }
+  
+  /**
    *  Create the web socket server.
    *  @param {function} callback The callback for new connections.
    *  @param {String} msg The message to broadcast.
    *  @return {undefined} Nothing
    */
   server = ws.createServer(function(conn) {
-    var connection_id     = conn_id++,
+    var connection_id     = 0,
         disconnect_reason = 'Closed by client',
         message_queue     = [],
         player            = null;
+        
+    while (connections[++connection_id]);
     
     conn.id = connection_id;
+    conn.player_name = null;
+    conn.is_admin = false;
     conn.rate = options.max_rate;
     conn.update_rate = 2;
+    conn.max_rate = options.max_rate;
     conn.last_rate_check = get_time();
+    conn.last_ping = 0;
+    conn.ping = 0;
     conn.data_sent = 0;
     conn.dimensions = [640, 480];
     conn.state = IDLE;
@@ -440,7 +540,42 @@ function start_gameserver(options, shared) {
      */
     conn.set_client_info = function(info) {
       conn.rate = Math.min(info.rate, options.max_rate);
+      conn.player_name = info.name;
       conn.dimensions = info.dimensions;
+    }
+
+    /**
+     *  Sends a chat message 
+     */
+    conn.chat = function(message) {
+      if (player) {
+        broadcast(OP_PLAYER_SAY, player.id, message);
+      }
+    }
+    
+    conn.auth = function(password) {
+      conn.is_admin = password == options.admin_password ? true : false;
+      return conn.is_admin;
+    }
+    
+    conn.exec = function() {
+      if (!conn.is_admin) {
+        return 'You need admin privileges in order to perform server commands';
+      }
+      var args = Array.prototype.slice.call(arguments);
+      var command = args.shift();
+      switch (command) {
+        case 'kick':
+          var name = args.shift();
+          var reason = args.shift();
+          world.forEachPlayer(function(player) {
+            if (player.name == name) {
+              connections[player.id].kill(reason);
+              return "Player kicked";
+            }
+          })
+          return "Player not found";
+      }
     }
     
     /**
@@ -448,24 +583,26 @@ function start_gameserver(options, shared) {
      */
     conn.kill = function(reason) {
       disconnect_reason = reason || 'Unknown Reason';
-      this.post([SERVER + DISCONNECT, disconnect_reason]);
+      this.post([OP_DISCONNECT_REASON, disconnect_reason]);
       this.close();
-      message_queue = null;
+      message_queue = [];
     }
     
     /**
      *  Queues the specified message and sends it on next flush.
      */
     conn.queue = function(msg) {
-      message_queue.push(msg);
+      if (conn.state == JOINED) {
+        message_queue.push(msg);
+      }
     }
 
     /**
      *  Stringify speicified object and sends it to remote part.
      */
     conn.post = function(data) {
-      var packet = JSON.stringify([CONTROL_PACKET, data]);
-      this.send(packet);
+      var packet = JSON.stringify(data);
+      this.write(packet);
     }
 
     /**
@@ -483,7 +620,7 @@ function start_gameserver(options, shared) {
         data_sent += data.length;
       }
             
-      this.send('[2,[' + packet_data.join(',') + ']]');
+      this.write('[' + GAME_PACKET + ',[' + packet_data.join(',') + ']]');
       this.data_sent += data_sent;
       
       var diff = now - this.last_rate_check;
@@ -514,7 +651,7 @@ function start_gameserver(options, shared) {
             log('Debug: Sending server state to ' + conn);
           }
           
-          conn.post([SERVER + STATE, shared.get_state()]);
+          conn.post([OP_SERVER_INFO, shared.get_state()]);
           break;
 
         case HANDSHAKING:
@@ -525,7 +662,7 @@ function start_gameserver(options, shared) {
           if (world.no_players >= world.max_players) {
             conn.kill('Server is full');
           } else {
-            conn.post([SERVER + HANDSHAKE].concat(world.get_repr()));
+            conn.post([OP_WORLD_DATA, world.map_data, world.rules]);
 
             if (conn.debug) {
               log('Debug: ' + conn + ' connected to server. Sending handshake...');
@@ -536,11 +673,9 @@ function start_gameserver(options, shared) {
         case JOINED:
           // BE CAREFUL WITH THIS. Position of conn.post has changed with 
           // on_player_join broadcast
-          player = world.add_player(connection_id, 
-                                    get_random_value(PLAYER_NAMES), 
-                                    get_random_value(PLAYER_COLORS));
+          player = world.add_player(connection_id, conn.player_name);
 
-          conn.post([SERVER + CONNECT, world.tick, player.id, player.name, player.color]);
+          conn.post([OP_WORLD_STATE, player.id].concat(world.get_repr()));
           
           log(conn + ' joined the game.');
           break;
@@ -581,7 +716,7 @@ function start_gameserver(options, shared) {
 
     // Connection ´recieve´ event handler. Occures each time that client sent
     // a message to the server.
-    conn.addListener('receive', function(data) {
+    conn.addListener('data', function(data) {
       var packet = null;
 
       try {
@@ -595,18 +730,18 @@ function start_gameserver(options, shared) {
 
       switch(packet[0]) {
 
-        case CONTROL_PACKET:
-          process_control_message([packet[1], conn]);
-          break;
-          
         case GAME_PACKET:
           if (world) {
             process_game_message([packet[1], player, world]);
           }
           break;
-        
+
+        case PING_PACKET:
+          conn.ping = get_time() - conn.last_ping;
+          break;
+
         default:
-          conn.kill('Bad header');
+          process_control_message([packet, conn]);
           break;
           
       }
@@ -620,8 +755,10 @@ function start_gameserver(options, shared) {
     
   });
   
-  sys.puts('Starting Game Server server at ' + shared.get_state().game_server_url);
-  server.listen(options.ws_port, options.host);
+  load_map(null, true, function(err) {
+    sys.puts('Starting Game Server server at ' + shared.get_state().game_server_url);
+    server.listen(options.ws_port, options.host);
+  });
   
   return server;
 }
@@ -635,7 +772,7 @@ var process_control_message = match (
    *  MUST be sent by the client when connected to server. It's used to validate
    *  the session.
    */
-  [[CLIENT + CONNECT], {'state =': CONNECTED}], 
+  [[OP_CLIENT_CONNECT], {'state =': CONNECTED}], 
   function(conn) {
     conn.set_state(HANDSHAKING);
   },
@@ -643,13 +780,44 @@ var process_control_message = match (
   /**
    *  Client has received world data. Client is now a player of the world.
    */
-  [[CLIENT + HANDSHAKE, Object], {'state =': HANDSHAKING}], 
+  [[OP_CLIENT_JOIN, Object], {'state =': HANDSHAKING}], 
   function(info, conn) {
-    conn.set_state(JOINED);
     conn.set_client_info(info);
+    conn.set_state(JOINED);
+  },
+
+  [[OP_CLIENT_SAY, String], {'state =': JOINED}], 
+  function(message, conn) {
+    if (message.length > 200) {
+      conn.kill('Bad chat message');
+    } else {
+      conn.chat(message);
+    }
+  },
+  
+  [[OP_CLIENT_SET, 'rate', Number], {'state =': JOINED}], 
+  function(rate, conn) {
+    conn.rate = Math.min(rate, conn.max_rate);
+  },
+
+  [[OP_CLIENT_EXEC, 'auth', String], {'state =': JOINED}], 
+  function(password, conn) {
+    if (conn.auth(password)) {
+      conn.post([OP_SERVER_EXEC_RESP, 'Admin granted']);
+    } else {
+      conn.post([OP_SERVER_EXEC_RESP, 'Wrong admin password']);
+    }
+  },
+
+  [[OP_CLIENT_EXEC, 'kick', String, String], {'state =': JOINED}], 
+  function(player_name, reason, conn) {
+    var resp = conn.exec('kick', player_name, reason);
+    conn.post([OP_SERVER_EXEC_RESP, resp]);
   },
   
   function(data) {
+    sys.puts(data);
+    sys.puts(data[1].state);
     data[1].kill('Bad control message');
   }
   
@@ -660,21 +828,27 @@ var process_control_message = match (
  */
 var process_game_message = match (
 
-  /**
-   *  Players command state has changed.
-   */
-  [[CLIENT + COMMAND, Number], _, _], 
-  function(value, player, world) {
-    world.set_player_command(player.id, value);
-  },
-
-  /**
-   *  Indicates that player is ready to start the round
-   */
-  [[CLIENT + READY], _, _], function(player, world) {
+  [[OP_CLIENT_SET, 'ready'], _, _], 
+  function(player, world) {
     world.set_player_ready(player.id);
   },
 
+  [[OP_CLIENT_SET, 'name', String], _, _], 
+  function(name, player, world) {
+    world.set_player_name(player.id, name);
+  },
+
+  /**
+   *  Players command state has changed.
+   */
+  [[OP_CLIENT_STATE, Number, Number], _, _], 
+  function(action, angle, player, world) {
+    player.action = action;
+    if (!player.dead) {
+      player.entity.angle = angle;
+    }
+  },
+  
   /**
    *  The message sent by client could not be matched. Kill the session
    */
@@ -702,58 +876,18 @@ function start_webserver(options, shared) {
   var server = fu.listen(options.http_port, options.host);
 
   for (var i=0; i < CLIENT_DATA.length; i++) {
-    fu.get('/' + path.basename(CLIENT_DATA[i]), fu.staticHandler(CLIENT_DATA[i]));
+    var virtualpath = CLIENT_DATA[i + 1] + path.basename(CLIENT_DATA[i]);
+    fu.get('/' + virtualpath, fu.staticHandler(CLIENT_DATA[i]));
+    i++;
   }
   
   fu.get('/', fu.staticHandler(CLIENT_DATA[0]));
   
   fu.get('/state', function (req, res) {
     res.sendHeader(200, {'Content-Type': 'application/json'});
-    res.sendBody(JSON.stringify(shared.get_state()), 'utf8');
-    res.finish();
+    res.write(JSON.stringify(shared.get_state()), 'utf8');
+    res.close();
   });
-  
-  return server;
-}
-
-/**
- *  Starts a Flash Socket Policy server that servers the required policy file
- *  for clients that uses the Flash WebSocket plugin.
- *
- *  Based on an example by "tautologistics" (http://github.com/zimbatm/nodejs-http-websocket/tree/master/example/socketpolicy.js)
- *  @param {Object} options Policy server options.
- *  @return {tcp.Server} Returns the newly created policy server.
- */
-function start_policy_server(options) {
-  var tcp = require("tcp");
-
-  var server = tcp.createServer(function (socket) {
-  	socket.setEncoding("utf8");
-  	socket.inBuffer = "";
-  	socket.addListener("connect", function () {
-  	  if (options.debug) {
-  	    sys.debug(socket.remoteAddress + ' connected to policy server');
-  	  }
-  	}).addListener("receive", function (data) {
-  		socket.inBuffer += data;
-  		if (socket.inBuffer.length > 32) {
-  			socket.close();
-  			return;
-  		}
-  		if (RE_POLICY_REQ.test(socket.inBuffer)) {
-  	    sys.debug('Sending policy file to ' + socket.remoteAddress + '');
-  			socket.send(POLICY_RES);
-  			socket.close();
-  		}
-	  });
-  });
-
-  // Would like to quit the process if listen fails. Today Node will print:
-  //   "(evcom) bind() Permission denied 
-  // on failure. I can't get some kind of notification about this. The error 
-  // message is probably hard coded. 
-  sys.puts('Starting Flash Socket Policy server at ' + options.host + ':' + options.policy_port);
-  server.listen(options.policy_port);
   
   return server;
 }
@@ -763,36 +897,15 @@ function start_policy_server(options) {
  *  @param {Object} options A option set
  *  @return {Object} All rules that was found in the specifed option set.
  */
-function get_rules(options) {
-  var rules = {}
-  for (var option in options) {
+function get_rules(default_rules, map_rules, user_rules) {
+  var rules = {};
+  for (var option in default_rules) {
     var match = option.match(/^r_([a-z_]+)/);
     if (match) {
-      rules[match[1]] = options[option];
+      rules[match[1]] = default_rules[option];
     }
   }
-  return rules; 
-}
-
-/**
- *  Returns a random value from an array and discards values that is already
- *  picked. 
- *  @param {Array} src Source array.
- *  @param {Array} list An array that contains objects that already has been  
-                        assigned a value.
- *  @param {String} prop_name The name of the property to check against. 
- *  @return {Object} The value
- */
-function get_random_value(src, list, prop_name) {
-  var value = null, count = 0;
-  while (!value && count++ <= src.length) {
-    value = src[Math.floor(Math.random() * src.length)];
-    src.forEach(function(item){
-      if (item[prop_name] == value) value = null;
-    });
-    if (value) return value;
-  }
-  return src[0];
+  return process.mixin(rules, process.mixin(map_rules, user_rules)); 
 }
 
 
@@ -802,17 +915,48 @@ function get_random_value(src, list, prop_name) {
  */
 function parse_options() {
   var parser  = new optparse.OptionParser(SWITCHES),
-      result = {};
+      result = { rules: {}, maps: []};
   parser.banner = 'Usage: wpilots.js [options]';
+
   parser.on('help', function() {
     sys.puts(parser.toString());
     parser.halt();
   });
+  
+  parser.on('map', function(prop, value) {
+    result.maps.push(value);
+  });
+  
   parser.on('*', function(opt, value) {
+    var match = opt.match(/^r_([a-z_]+)/);
+    if (match) {
+      result.rules[match[1]] = value;
+    }
     result[opt] = value || true;
   });      
+  
   parser.parse(process.ARGV);
   return parser._halt ? null : process.mixin(DEFAULT_OPTIONS, result);
+}
+
+function get_unique_name(players, player_id, name) {
+  var count = 0;
+  var unique_name = name;
+  while (true) {
+    for (var id in players) {
+      if (player_id == id) {
+        continue;
+      }
+      if (players[id].name != unique_name) {
+        return unique_name;
+      }
+      count++
+    }
+    if (count == 0) {
+      return name;
+    } 
+    unique_name += '_';
+  }
 }
 
 /**

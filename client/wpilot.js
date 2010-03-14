@@ -11,55 +11,151 @@ var CLIENT_VERSION = '0.8';
 var GRID_CELL_SIZE      = 250;
     GRID_CELL_COLOR     = 'rgba(255,255,255,0.2)';
     
-// GUI Fonts used in the client.
-var HUD_SMALL_FONT      = 'bold 9px Arial',
-    HUD_LARGE_FONT      = 'bold 11px Arial',
-    HUD_XLARGE_FONT      = 'bold 16px Arial',
-    HUD_WHITE_COLOR     = 'rgba(255,255,255,0.8)',
-    HUD_GREY_COLOR      = 'rgba(255,255,255,0.4)';
-    HUD_MESSAGE_SMALL   = 0,
-    HUD_MESSAGE_LARGE   = 1;
+// Colors
+var COLOR_BRIGHT    = '255, 255, 255',
+    COLOR_DUST      = '110, 110, 110',
+    COLOR_DAWN      = '78, 78, 78',
+    COLOR_DARK      = '0, 0, 0',
+    COLOR_ACCENT_1  = '255, 215, 0',
+    COLOR_ACCENT_2  = '102, 255, 0';
+    
+// Predefined canvas compatible colors
+var CANVAS_COLOR_BRIGHT   = 'rgb(' + COLOR_BRIGHT + ')',
+    CANVAS_COLOR_DAWN     = 'rgb(' + COLOR_DAWN + ')',
+    CANVAS_COLOR_DARK     = 'rgb(' + COLOR_DARK + ')';
+    CANVAS_COLOR_ACCENT_1 = 'rgb(' + COLOR_ACCENT_1 + ')';
+    CANVAS_COLOR_ACCENT_2 = 'rgb(' + COLOR_ACCENT_2 + ')';
+
+var PLAYER_COLORS = {
+  1: '255,176,0',
+  2: '51,182,255',
+  3: '172,48,224',
+  4: '230,21,90',
+  5: '166,219,0',
+  6: '125,142,22',
+  7: '244,52, 0',
+  8: '199,244,136',
+  9: '227,111,160',
+  10: '63,140,227',
+  11: '227,126,76',
+  12: '134,213,227'
+}
+
+// Player names
+var PLAYER_NAMES = [
+  'Boba Fett', 
+  'Han Solo', 
+  'Luke Skywalker', 
+  'Princess Leia',
+  'R2-D2',
+  'C-3PO',
+  'Chewbacca',
+  'Darth Vader',
+  'Lando',
+  'Yoda',
+  'Teboo',
+  'Admiral Ackbar'
+];
+
+// Font variations
+var FONT_NAME = 'Arial',
+
+    // Font attributes
+    WEIGHT_NORMAL = '',
+    WEIGHT_HEAVY = 'bold',
+
+    // Font sizes
+    SIZE_XSMALL = '9px',
+    SIZE_SMALL  = '11px',
+    SIZE_MEDIUM = '13px',
+    SIZE_LARGE  = '16px',
+    SIZE_XLARGE = '18px';
+    
+
+var WARMUP_NOTICE_FONT  = [WEIGHT_HEAVY, SIZE_MEDIUM, FONT_NAME].join(' ');
+    
+// Scoreboard
+var SCOREBOARD_PAD = 6,
+    SCOREBOARD_MAR = SCOREBOARD_PAD / 2;
+
+// Scoreboard fonts
+var SCOREBOARD_TITLE_FONT   = [WEIGHT_HEAVY, SIZE_LARGE, FONT_NAME].join(' '),
+    SCOREBOARD_SUB_FONT     = [WEIGHT_HEAVY, SIZE_SMALL, FONT_NAME].join(' '),
+    SCOREBOARD_ROW_FONT     = [WEIGHT_HEAVY, SIZE_MEDIUM, FONT_NAME].join(' '),
+    SCOREBOARD_NOTICE_FONT  = [WEIGHT_HEAVY, SIZE_MEDIUM, FONT_NAME].join(' '),
+    SCOREBOARD_ROW_A_FONT   = [WEIGHT_NORMAL, SIZE_MEDIUM, FONT_NAME].join(' ');
+
+// Scoreboard chars
+var SCOREBOARD_READY_CHAR     = '\u2714',
+    SCOREBOARD_NOT_READY_CHAR = '\u2716';
+
+// FPS counter and netsat
+var STATS_FONT = [WEIGHT_NORMAL, SIZE_XSMALL, FONT_NAME].join(' ');
 
 // Message log related constants.
-var LOG_AGE_LIMIT       = 100,
-    LOG_HISTORY_COUNT   = 20,
-    LOG_FONT            = '9px Arial',
-    LOG_COLOR           = 'rgba(255,255,255,0.4)';
+var MESSAGE_LOG_LENGTH    = 20;
+    MESSAGE_LOG_FONT      = [WEIGHT_NORMAL, SIZE_SMALL, FONT_NAME].join(' '),
+    MESSAGE_LOG_LIFETIME  = 150;
 
-var SHIP_FONT           = '9px Arial';
+// Font for player names
+var PLAYER_NAME_FONT  = [WEIGHT_HEAVY, SIZE_SMALL, FONT_NAME];
 
+var PROMPT_FONT   = [WEIGHT_HEAVY, SIZE_MEDIUM, FONT_NAME].join(' '),
+    PROMPT_CURSOR = '|';
+    
 // WPilotClient states
 var CLIENT_DISCONNECTED     = 0,
     CLIENT_CONNECTING       = 1,
     CLIENT_CONNECTED        = 2;
 
+// Powerup constants    
+var POWERUP_FONT            = '7px Arial',
+    POWERUP_SPEED_COLOR     = '230,21,90',
+    POWERUP_RAPID_COLOR     = '166,219,0',
+    POWERUP_ENERGY_COLOR    = '51,182,255';
+    
+var HUD_FONT = [WEIGHT_HEAVY, SIZE_XLARGE, FONT_NAME].join(' ');    
+    
+var CHAT_MAX_CHARS  = 200;
+    
+var SOUNDS = {
+  background:   [1,  ['background']],
+  ship_spawn:   [3,  ['ship_spawn']],
+  ship_die:     [3,  ['ship_die']],
+  ship_thrust:  [6,  ['ship_thrust']],  
+  bullet_spawn: [8,  ['ship_fire_1', 'ship_fire_2', 'ship_fire_3']], 
+  powerup_spawn:[3,  ['powerup_spawn']],
+  powerup_die:  [2,  ['powerup_1_die', 'powerup_2_die', 'powerup_3_die']] 
+}
+
 // Default client options. This options can be changed from the console
 // by typing wpilot.options[OPTION_NAME] = new_value
 var DEFAULT_OPTIONS         = {
-  max_fps:              100,
-  show_fps:             true,
-  
-  show_netstat:         false, 
   
   rate:                 5000,
-
-  hud_player_score_v:   true,
-  hud_player_name_v:    true,
-  hud_player_pos_v:     true,
-  hud_coords_v:         true,
-  hud_energy_v:         true,
   
-  log_max_messages:     3,
+  name:                 get_random_value(PLAYER_NAMES),
+
+  rotation_speed:       6,
+  rotation_acc:         0.5,
+  
+  bg_sound_enabled:     true,
+  sfx_sound_enabled:    false,
+  sound_bg_volume:      0.8,
+  
+  log_max_messages:     6,
   log_msg_lifetime:     5000,
   log_console:          true,
   
   bindings: {
     'ready':            82,
+    'scoreboard':       83,
     'rotate_west':      37,
     'rotate_east':      39,
     'thrust':           38,
     'shoot':            32,
-    'shield':           40
+    'shield':           40,
+    'prompt':           13
   }
 }
 
@@ -71,19 +167,18 @@ function WPilotClient(options) {
   
   this.viewport           = null;
   this.input              = null;
+  this.sound              = null;
   this.world              = null;
   this.player             = null;
   this.conn               = null;
   this.message_log        = [];
-  this.hud_small_message  = null;
-  this.hud_small_pulse    = false;
-  this.hud_small_alpha    = 0.2;
-  this.hud_large_message  = null;
-  this.respawn_at         = 0;
+  this.gui                = { hud: null, scoreboard: null, warmupnotice: null, 
+                              netstat: null, fps: null, messages: null, 
+                              prompt: null };
 
   this.netstat            = { 
     start_time:         null,
-    frequence:          0.4,
+    frequence:          0.01,
     last_update:        0,
     last_received:      0, 
     bytes_received:     0, 
@@ -104,6 +199,8 @@ function WPilotClient(options) {
   this.handshaked         = false;
   this.is_connected       = false;
   this.disconnect_reason  = null;
+  this.current_r          = 0;
+  this.last_r             = 0;
   
   // Event callbacks
   this.onconnect          = function() {};
@@ -117,14 +214,43 @@ function WPilotClient(options) {
  *  @param {String} The message string
  *  @return {undefined} Nothing
  */
-WPilotClient.prototype.log = function(msg) {
+WPilotClient.prototype.log = function(msg, color) {
   var buffer = this.message_log, 
       time   = get_time() + this.options.log_msg_lifetime;
-  if (buffer.length > LOG_HISTORY_COUNT) {
+  if (buffer.length > MESSAGE_LOG_LENGTH) {
     buffer.shift();
   }
-  buffer.push({ text: msg, time: time, disposed: false });
+  buffer.push({
+    text: msg, 
+    time: time, 
+    disposed: false, 
+    color: color || COLOR_BRIGHT 
+  });
   if (this.options.log_console && window.console) console.log(msg);
+}
+
+/**
+ *  Executes a command
+ *  @param command {String} command to execute
+ *  @param 1..N {String} arguments to command
+ *  @return {undefined} Nothing
+ */
+WPilotClient.prototype.exec = function() {
+  COMMANDS.call(null, [this].concat(Array.prototype.slice.call(arguments)));
+}
+
+/**
+ *  Sends a chat message
+ *  @param message {String} message to send
+ *  @return {undefined} Nothing
+ */
+WPilotClient.prototype.chat = function(message) {
+  if (this.state == CLIENT_CONNECTED) {
+    this.post_control_packet([OP_CLIENT_SAY, 
+                              message.length > CHAT_MAX_CHARS ?
+                              message.substr(0, CHAT_MAX_CHARS) :
+                              message]);
+  }
 }
 
 /**
@@ -133,10 +259,14 @@ WPilotClient.prototype.log = function(msg) {
  *  @return {undefined} Nothing
  */
 WPilotClient.prototype.set_world = function(world) {
-  world.client = this;
-  this.viewport.set_camera_pos(vector_div(world.size, 2));
+  if (world != null) {
+    world.client = this;
+    this.viewport.set_camera_pos(vector_div(world.size, 2));
+  }
   this.world = world;
-  this.log('World data loaded...');
+  this.gui.hud.world = world;
+  this.gui.scoreboard.world = world;
+  this.gui.warmupnotice.world = world;
 }
 
 /**
@@ -145,17 +275,64 @@ WPilotClient.prototype.set_world = function(world) {
  *  @return {undefined} Nothing
  */
 WPilotClient.prototype.set_viewport = function(viewport) {
+  var gui = this.gui;
   var self = this;
-  viewport.ondraw = function() {
-    if (self.player) {
-      if (!self.player.dead) {
-        viewport.set_camera_pos(self.player.entity.pos);
+
+  if (viewport) {
+    // Initialize GUI elements
+    gui.hud = new GUIPlayerHUD([viewport.w / 2, viewport.h / 2]);
+    gui.netstat = new GUINetStat([6, 12], this.netstat);
+    gui.fps = new GUIFpsCounter([viewport.w - 6, 12], viewport);
+    gui.messages = new GUIMessageLog([6, viewport.h - 2], 
+                                     this.message_log,
+                                     this.options);
+    gui.scoreboard = new GUIScoreboard([0, 0]);
+    gui.scoreboard.set_size([viewport.w, viewport.h]);
+    gui.warmupnotice = new GUIWarmupNotice([viewport.w / 2, 
+                                            viewport.h - 50]);
+    gui.prompt = new GUIPrompt([40, viewport.h - 40]);
+    gui.prompt.set_size([viewport.w - 80, 26]);
+    gui.prompt.oncommand = function() { self.exec.apply(self, arguments) };
+    gui.prompt.onchat = function() { self.chat.apply(self, arguments) };
+
+    // Set the draw callback
+    viewport.ondraw = function(ctx) {
+      var world = self.world,
+          player = self.player,
+          tick = tick;
+
+      if (player && !player.dead) {
+        viewport.set_camera_pos(player.entity.pos);
       }
-      self.world.draw(viewport);
-      self.draw_hud();
+
+      if (world) {
+        world.draw(viewport);
+        tick = world.tick;
+      }
+
+      // Draw GUI elements
+      for (var name in gui) {
+        var element = gui[name],
+            visible = element.is_visible();
+
+        if (element.alpha) {
+          ctx.save();
+          ctx.globalAlpha = element.alpha;
+          ctx.translate(element.pos[0], element.pos[1]);
+          element.draw(ctx, tick);
+          ctx.restore();
+        }
+
+        if (visible && element.alpha < 1.0) {
+          element.alpha = element.alpha + 0.2 > 1.0 ? 1.0 : element.alpha + 0.2;
+        } else if (!visible && element.alpha > 0) {
+          element.alpha = element.alpha - 0.2 < 0 ? 0 : element.alpha - 0.2;
+        }
+
+      }
     }
-    self.draw_logs();
   }
+
   this.viewport = viewport;
 }
 
@@ -169,21 +346,38 @@ WPilotClient.prototype.set_input = function(device) {
 }
 
 /**
+ *  Set the Sound Device
+ *  @param device {SoundDevice} the sound device
+ *  @return {undefined} Nothing
+ */
+WPilotClient.prototype.set_sound = function(device) {
+  if (device) {
+    device.init(SOUNDS);
+  }
+  this.sound = device;
+}
+
+/**
  *  Sets the player data
  *  @param {Player} player The player instance
  *  @return {undefined} Nothing
  */
 WPilotClient.prototype.set_player = function(player) {
-  player.is_me = true;
+  if (player) {
+    player.is_me = true;
+    this.log('You are now known as "' + player.name  + '"...');
+  }
   this.player = player;
-  this.log('You are now known as "' + player.name  + '"...');
+  this.gui.hud.me = player;
+  this.gui.scoreboard.me = player;
+  this.gui.warmupnotice.me = player;
 }
 
 WPilotClient.prototype.set_server_state = function(state) {
   if (state.no_players != state.max_players) {
     this.server_state = state;
     this.log('Recived server state, now joining game...');
-    this.post_control_packet([CLIENT + CONNECT]);
+    this.post_control_packet([OP_CLIENT_CONNECT]);
   } else {
     this.log('Server is full');
   }
@@ -195,23 +389,28 @@ WPilotClient.prototype.set_server_state = function(state) {
  *  @return {undefined} Nothing
  */
 WPilotClient.prototype.set_state = function(state) {
+  var self = this;
   switch(state) {
 
     case CLIENT_CONNECTING:
+      this.sound.loop('background', this.options.sound_bg_volume);
       this.log('Server found, now joining game...');
       this.onconnect();
       break;
 
     case CLIENT_CONNECTED:
       this.log('Joined server ' + this.conn.URL + '...');
-      this.hud_small_message = 'Waiting for more players to connect';
-      this.post_control_packet([CLIENT + HANDSHAKE, { 
+      this.post_control_packet([OP_CLIENT_JOIN, {
+        name: this.options.name,
         rate: this.options.rate,
         dimensions: [this.viewport.w, this.viewport.h] 
       }]);  
       break;
       
     case CLIENT_DISCONNECTED:    
+      this.log('You where disconnected from server ' +
+                this.disconnect_reason ? 
+                '(Reason: ' + this.disconnect_reason + ').' : '');
       this.conn = null;
       this.is_connected = false;
       this.handshaked = false;
@@ -219,14 +418,8 @@ WPilotClient.prototype.set_state = function(state) {
       this.player = null;
       this.conn = null;
       this.message_log = [];
-      this.hud_small_message = null;
-      this.hud_large_message = null;
-      this.ondisconnect(this.disconnect_reason);
       this.stop_gameloop();
-      
-      this.log('You where disconnected from server ' +
-                this.disconnect_reason ? '(Reason: ' + this.disconnect_reason + ').' :
-                '');
+      self.ondisconnect(self.disconnect_reason);
       break;
     
   }
@@ -239,25 +432,76 @@ WPilotClient.prototype.set_state = function(state) {
  *  @return {undefined} Nothing
  */
 WPilotClient.prototype.process_user_input = function(t, dt) {
-  var player        = this.player,
+  var gui           = this.gui,
+      player        = this.player,
       input         = this.input;
+  
+  if (input.toggle('prompt')) {
+    gui.prompt.visible = !gui.prompt.visible;
+    input.onkeypress = this.gui.prompt.visible ? 
+                            function(char) {
+                              gui.prompt.handle_key_stroke(char);
+                            } :
+                            null;
+  }
+  
+  if (this.gui.prompt.visible) {
+    return;
+  }
+  
+  if (input.on('scoreboard')) {
+    this.gui.scoreboard.visible = true;
+  } else {
+    this.gui.scoreboard.visible = false;
+  }
 
   if (input.toggle('ready')) {
-    this.post_game_packet([CLIENT + READY]);
-  } 
+    this.post_game_packet([OP_CLIENT_SET, 'ready']);
+  }
 
   if (!player.dead && player.entity.visible) {
-    var new_command  = 0;
+    var new_action   = 0,
+        new_angle     = player.entity.angle;
     
-    if (input.on('thrust')) new_command |= THRUST;
-    if (input.on('rotate_west')) new_command |= ROTATE_W;
-    if (input.on('rotate_east')) new_command |= ROTATE_E;
-    if (input.on('shield')) new_command |= SHIELD;
-    if (input.on('shoot')) new_command |= SHOOT;
+    if (input.on('thrust')) new_action |= THRUST;
+    if (input.on('shield')) new_action |= SHIELD;
+    if (input.on('shoot')) new_action |= SHOOT;
+    
+    if (player.is(THRUST) && (parseInt(t * 1000)) % 10 == 0) {
+      this.sound.play('ship_thrust', 0.05);
+    }
+    
+    if (input.on('rotate_west')) {
+      if (this.last_r != -1) {
+        this.last_r = -1;
+        this.current_r = 0;
+      }
+      if (this.current_r > -this.options.rotation_speed) {
+        this.current_r -= this.options.rotation_acc;
+      } 
+      new_angle += dt * this.current_r;
+    }  else if (input.on('rotate_east')) {
+      if (this.last_r != 1) {
+        this.last_r = 1;
+        this.current_r = 0;
+      }
+      if (this.current_r < this.options.rotation_speed) {
+        this.current_r += this.options.rotation_acc;
+      } 
+      new_angle += dt * this.current_r;
+    } else {
+      this.last_r = -1;
+      this.current_r = 0;
+    }
 
-    if (new_command != player.command) {
-      player.command = new_command;
-      this.post_game_packet([CLIENT + COMMAND, new_command]);
+    if (new_action != player.action || new_angle != player.entity.angle) {
+      
+      if (new_angle > Math.PI) new_angle = -Math.PI;
+      else if(new_angle < -Math.PI) new_angle = Math.PI;
+      
+      player.action = new_action;
+      player.entity.angle = new_angle;
+      this.post_game_packet([OP_CLIENT_STATE, new_action, new_angle]);
     }
   }  
 }
@@ -269,7 +513,6 @@ WPilotClient.prototype.process_user_input = function(t, dt) {
  */
 WPilotClient.prototype.start_gameloop = function(initial_tick) {
   var self          = this,
-      player_entity = self.player.entity,
       world         = self.world,
       viewport      = self.viewport;
       
@@ -283,13 +526,15 @@ WPilotClient.prototype.start_gameloop = function(initial_tick) {
   
   // Is called when loop is about to start over.
   gameloop.ondone = function(t, dt, alpha) {
-    self.update_client(t, dt);
     self.update_netstat(t, dt);
     viewport.refresh(alpha);
   }
 
   this.viewport.set_autorefresh(false);
-  this.netstat.start_time = this.netstat.last_update = this.netstat.last_received = get_time();
+
+  this.netstat.start_time = this.netstat.last_update = 
+                            this.netstat.last_received = get_time();
+                            
   gameloop.start();
   self.gameloop = gameloop;
   return gameloop;
@@ -302,8 +547,9 @@ WPilotClient.prototype.start_gameloop = function(initial_tick) {
 WPilotClient.prototype.stop_gameloop = function() {
   if (this.gameloop) {
     this.gameloop.kill();
+    this.gameloop.ontick = null;
+    this.gameloop.ondone = null;
     this.gameloop = null;
-    this.viewport.set_autorefresh(true);
   }
 }
 
@@ -338,11 +584,11 @@ WPilotClient.prototype.join = function(url) {
       var packet        = JSON.parse(event.data);
       
       switch (packet[0]) {
-        
-        case CONTROL_PACKET:
-          process_control_message([packet[1], self]);
+
+        case PING_PACKET:
+          self.conn.send(JSON.stringify([PING_PACKET]));
           break;
-          
+        
         case GAME_PACKET:
           if (!self.world) return;
           
@@ -365,8 +611,9 @@ WPilotClient.prototype.join = function(url) {
         
           break;
           
+          
         default:
-          self.log('Recived bad packet header');
+          process_control_message([packet, self]);
           break;
       }
 
@@ -416,198 +663,8 @@ WPilotClient.prototype.post_game_packet = function(msg) {
  *  @return {undefined} Nothing
  */
 WPilotClient.prototype.post_control_packet = function(msg) {
-  var packet = JSON.stringify([CONTROL_PACKET, msg]);
+  var packet = JSON.stringify(msg);
   this.conn.send(packet);
-}
-
-/**
- *  Draws logs, which includes the message log, netstat log and fps counter.
- *  @param {String} msg The message that should be sent.
- *  @return {undefined} Nothing
- */
-WPilotClient.prototype.draw_logs = function() {
-  var ctx             = this.viewport.ctx,
-      log             = this.message_log,
-      log_index       = log.length,
-      log_count       = 0,
-      log_x           = 5,
-      log_y           = this.viewport.h + 7,
-      current_time    = get_time(),
-      max             = this.options.log_max_messages;
-  
-  ctx.font = LOG_FONT;
-  while (log_index-- && ((log.length - 1) - log_index < max)) {
-    var msg = log[log_index];
-    if (!msg.disposed) {
-      var alpha = msg.time > current_time ? 0.8 :
-           0.8 + (0 - ((current_time - msg.time) / 1000));
-      if (alpha < 0.02) {
-        msg.disposed = true;
-      } 
-      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
-      draw_label(ctx, log_x, (log_y -= 12), msg.text, 'left');
-    }
-  }  
-  
-  if (this.options.show_netstat && this.netstat.start_time) {
-    ctx.fillStyle = LOG_COLOR;
-    var in_kps = round_number(this.netstat.bps_in / 1024, 2);
-    var out_kps = round_number(this.netstat.bps_out / 1024, 2);
-    var in_mps = round_number(this.netstat.mps_in, 2);
-    var out_mps = round_number(this.netstat.mps_out, 2);
-    var text = 'Netstat: in: ' + in_kps + 'kb/s, out: ' + out_kps + 'kb/s, ' +
-               'in: ' + in_mps + '/mps, out: ' + out_mps + '/mps';
-    draw_label(ctx, 6, 12, text, 'left');
-  }
-  
-  if (this.options.show_fps) {
-    ctx.font = LOG_FONT;
-    ctx.fillStyle = LOG_COLOR;
-    draw_label(ctx, this.viewport.w - 6, 12, 'FPS count: ' + parseInt(this.viewport.average_fps), 'right');
-  }
-}
-
-/**
- *  Draws the player HUD.
- *  @param {String} msg The message that should be sent.
- *  @return {undefined} Nothing
- */
-WPilotClient.prototype.draw_hud = function() {
-  var viewport        = this.viewport,
-      ctx             = viewport.ctx,
-      center_w        = viewport.w / 2,
-      center_h        = viewport.h / 2,
-      player_entity   = this.player.entity,
-      opt             = this.options;
-  
-  if (!this.player.dead) {
-    ctx.textAlign = 'center';
-
-    ctx.font = HUD_SMALL_FONT;
-    
-    if(opt.hud_player_score_v) {
-      var limit = this.world.r_state == ROUND_WAITING ? '-' : this.server_state.rules.round_limit;
-      ctx.fillStyle = HUD_GREY_COLOR;
-      draw_label(ctx, center_w + 72, center_h + 55, 'Score: ' + this.player.score + '/' + limit, 'right', 45);
-    }
-
-    if (opt.hud_player_name_v) {
-      ctx.fillStyle = HUD_WHITE_COLOR;
-      draw_label(ctx, center_w - 72, center_h - 45, this.player.name, 'left', 100);
-    }
-
-    if (opt.hud_player_pos_v) {
-      var my_pos = this.player.position;
-      var max_pos = this.world.no_players;
-      ctx.fillStyle = HUD_WHITE_COLOR;
-      draw_label(ctx, center_w + 72, center_h - 45, 'Pos ' + my_pos + '/' + max_pos, 'right', 45);
-    }
-    
-    if (opt.hud_coords_v)  {
-      ctx.fillStyle = HUD_GREY_COLOR;
-      draw_label(ctx, center_w - 72, center_h + 55, parseInt(player_entity.pos[0]) + ' x ' + parseInt(player_entity.pos[1]));
-    }    
-    
-    if (opt.hud_energy_v) {
-      draw_v_bar(ctx, center_w + 62, center_h - 37, 7, 78, this.player.energy);
-    }    
-  }
-  
-  if (!this.player.dead) {
-    ctx.save();
-    ctx.translate(center_w, center_h);
-    player_entity.draw(ctx);
-    ctx.restore();    
-  }
-
-  // Draw large HUD message
-  if (this.hud_large_message) {
-    ctx.fillStyle = 'rgb(255, 215, 0)';
-    ctx.font = HUD_XLARGE_FONT;
-    draw_label(ctx, center_w, center_h, this.hud_large_message, 'center', 400);
-  }
-  
-  // Draw small HUD message
-  if (this.hud_small_message) {
-    if (this.hud_small_pulse) {
-      var alpha = Math.abs(Math.sin((this.hud_small_alpha += 0.08)));
-      if (alpha < 0.1) {
-        alpha = 0.1;
-      } 
-      ctx.fillStyle = 'rgba(255, 215,0,' + alpha + ')';
-    } else {
-      ctx.fillStyle = 'rgb(255, 215, 0)';
-    }
-    ctx.font = HUD_LARGE_FONT;
-    draw_label(ctx, center_w, viewport.h - 50, this.hud_small_message, 'center', 100);
-  }
-}
-
-WPilotClient.prototype.update_client = function(t, dt) {
-  var world   = this.world,
-      player  = this.player,
-      server  = this.server_state,
-      no      = 0,
-      sec     = dt * 60;
-  
-  this.hud_small_pulse = false;    
-  this.hud_small_message = null;
-  this.hud_large_message = null;
-  
-  switch(world.r_state) {
-    case ROUND_WAITING:
-      if (world.no_players == 1) {
-        this.hud_small_message = 'Waiting for more players to join...';
-      } else if (!player.ready) {
-        this.hud_small_message = 'Press (r) when ready';
-        this.hud_small_pulse = true;
-      } else {
-        no = Math.ceil((world.no_players * 0.6) - world.no_ready_players);
-        this.hud_small_message = 'Waiting for ' + no + ' player' + (no == 1 ? '' : 's') + ' to press ready';
-      }
-      break;
-
-    case ROUND_STARTING:
-      no = parseInt((world.r_timer - t) / sec);
-      if (no == 0) {
-        this.hud_large_message = 'Prepare your self...';
-      } else {
-        this.hud_large_message = 'Round starts in ' + no + ' sec';
-      }
-      break;
-
-    case ROUND_RUNNING:
-      if (player.dead) {
-        if (!this.respawn_at) {
-          this.respawn_at = t + server.rules.respawn_time * dt;
-        } 
-        no = parseInt((this.respawn_at - t) / sec); 
-        if (no == 0) {
-          this.hud_small_message = 'Prepare your self...';
-        } else {
-          this.hud_small_message = 'Respawn in ' + no + ' sec';
-        }
-      } 
-      break;
-
-    case ROUND_FINISHED:
-      if (!world.winners) {
-        var winners = [];
-        for (var i = 0; i < world.r_winners.length; i++) {
-          winners.push(world.players[world.r_winners[i]].name);
-        }
-        world.winners = winners.join(',');
-      }
-      no = parseInt((world.r_timer - t) / sec);
-      if (no == 0) {
-        this.hud_large_message = 'Starting warm-up round';
-      } else {
-        this.hud_large_message = 'Round won by ' + world.winners;
-        this.hud_small_message = 'New round starts in ' + no + ' sec'
-      }
-      break;
-    
-  }
 }
 
 /**
@@ -643,54 +700,51 @@ var process_control_message = match (
    *  The first message recieved from server on connect. Contains the 
    *  state of the server. 
    */
-  [[SERVER + STATE, Object], _], 
+  [[OP_SERVER_INFO, Object], _], 
   function(state, client) {
     client.set_server_state(state);
   },
   
   /**
-   *  Is received after the client has sent a CLIENT CONNET message. The message
+   *  Is received after the client has sent a CLIENT CONNECT message. The message
    *  contains all data necessary to set up the game world.
    */
-  [[SERVER + HANDSHAKE, Object, Array], _], 
-  function(world_data, players_data, client) {
-    var world = new World(world_data);
-    world.build();
-    
-    for (var i = 0; i < players_data.length; i++) {
-      var player_data = players_data[i];
-      var player = new Player(player_data);
-      world.players[player.id] = player;
-      if (!player_data.dead) {
-        var entity = new Ship({
-          pos:    player_data.pos,
-          vel:    player_data.vel,
-          angle:  player_data.angle,
-          player: player
-        });
-        world.add_entity(entity);
-        player.entity = entity;
-      }
-    }
-    
+  [[OP_WORLD_DATA, Object, Object], _], 
+  function(map_data, rules, client) {
+    var world = new World(false);
+    world.build(map_data, rules);
+    client.log('World data loaded...');
     client.set_world(world);
-    
     client.set_state(CLIENT_CONNECTED);
   },
   
-  [[SERVER + CONNECT, Number, Number, String, String], _],
-  function(tick, id, name, color, client) {
-    var player = client.world.add_player(id, name, color);
-    client.set_player(player);
-    client.start_gameloop(tick);
+  [[OP_WORLD_STATE, Number, Object, Array, Array], _],
+  function(my_id, state, players, powerups, client) {
+    client.world.set_state(state, players, powerups);
+    client.set_player(client.world.players[my_id]);
+    client.start_gameloop(client.world.tick);
+  },
+  
+  [[OP_WORLD_RECONNECT], _],
+  function(client) {
+    client.set_world(null);
+    client.stop_gameloop();
   },
   
   /**
    *  Is recieved when disconnected from server.
    */
-  [[SERVER + DISCONNECT, String], _], 
+  [[OP_DISCONNECT_REASON, String], _], 
   function(reason, client) {
     client.disconnect_reason = reason;
+  },
+
+  /**
+   *  Is recieved when disconnected from server.
+   */
+  [[OP_SERVER_EXEC_RESP, String], _], 
+  function(message, client) {
+    client.log(message);
   },
   
   function(msg) {
@@ -700,23 +754,83 @@ var process_control_message = match (
   
 );
 
+var COMMANDS = match (
+  [_, 'name', String], function(client, new_name) {
+    client.post_game_packet([OP_CLIENT_SET, 'name', new_name]);
+  },
+  
+  [_, 'ready'], function(client) {
+    client.post_game_packet([OP_CLIENT_SET, 'ready']);
+  },
+  
+  [_, 'fps'], function(client) {
+    client.gui.fps.visible = !client.gui.fps.visible;
+  },
+
+  [_, 'netstat'], function(client) {
+    client.gui.netstat.visible = !client.gui.netstat.visible;
+  },
+
+  [_, 'rate', String], function(client, value) {
+    var rate = parseInt(value);
+    if (rate > 0) {
+      client.post_control_packet([OP_CLIENT_SET, 'rate', rate]);
+      client.log('Setting "rate" is now ' + rate);
+    }
+  },
+
+  [_, 'auth', String], function(client, password) {
+    client.post_control_packet([OP_CLIENT_EXEC, 'auth', password]);
+  },
+
+  [_, 'kick', String, String], function(client, name, reason) {
+    client.post_control_packet([OP_CLIENT_EXEC, 'kick', name, reason]);
+  },
+  
+  function(pattern) {
+    pattern[0].log('Command not found or wrong no of arguments', COLOR_ACCENT_1);
+  }
+)
+
 Player.prototype.on_before_init = function() {
-  this.position = 1;
+  this.angle = 0; 
+  this.rank = 1;
   this.is_me = false;
+  
+  // Used by score board to write information
+  this.death_cause = 0;
+  this.killed_by = null;
+}
+
+Player.prototype.on_after_init = function() {
+  this.color = PLAYER_COLORS[this.id] || COLOR_BRIGHT;
 }
 
 World.prototype.on_before_init = function() {
   this.anim_id_count = 1;
-  this.animations = {};
+  this.animations = [];
+  this.ranked_player_list = [];
+  this.winner_names = null;
 }
 
 /**
  *  Callback for world update
  */
 World.prototype.on_update = function(t, dt) {
-  for (var anim in this.animations) {
-    this.animations[anim].update(t, dt);
-  }  
+  var animations = this.animations,
+      index = animations.length;
+  while (index--) {
+    var job = animations[index];
+    job.anim.update(t, dt);
+    if (job.anim.is_done) {
+      job.callback();
+      animations.splice(index, 1);
+    }
+  }
+}
+
+World.prototype.on_after_state_set = function() {
+  this.ranked_player_list = calculate_ranks(this);
 }
 
 /**
@@ -724,6 +838,8 @@ World.prototype.on_update = function(t, dt) {
  */
 World.prototype.on_player_join = function(player) {
   this.client.log('Player "' + player.name + '" joined the world...');
+
+  this.ranked_player_list = calculate_ranks(this);
 }
 
 /**
@@ -731,6 +847,8 @@ World.prototype.on_player_join = function(player) {
  */
 World.prototype.on_player_leave = function(player, reason) {
   this.client.log('Player "' + player.name + '" disconnected. Reason: ' + reason);
+  
+  this.ranked_player_list = calculate_ranks(this);
 }
 
 /**
@@ -738,48 +856,47 @@ World.prototype.on_player_leave = function(player, reason) {
  */
 World.prototype.on_player_spawn = function(player, pos) {
   var self = this,
-      anim_id = this.anim_id_count++;
+      volume = player.is_me ? 1 : calculate_sfx_volume(this.client, pos);
 
-  this.animations[anim_id] = new SpawnAnimation(
-    pos, 
-    function() {
+  this.client.sound.play('ship_spawn', volume);
+  
+  this.play_animation(new SpawnAnimation(pos), function() {
+    if (player.entity) {
       player.entity.visible = true;
-      delete self.animations[anim_id];
     }
-  );  
+  });
 
   if (player.is_me) {
     player.entity.is_me = true;
-    this.client.respawn_at = 0;
     this.client.viewport.set_camera_pos(pos);
   }
   
 }
 
+World.prototype.on_player_fire = function(player, angle) {
+  var volume = player.is_me ? 1 : calculate_sfx_volume(this.client, 
+                                                       player.entity.pos);
+  this.client.sound.play('bullet_spawn', volume);
+}
+
 /**
  * Callback for player died
  */
-World.prototype.on_player_died = function(player, old_entity, death_cause, killer) {
-  var self = this,
-      anim_id = this.anim_id_count++;
+World.prototype.on_player_died = function(player, old, death_cause, killer) {
+  var volume = player.is_me ? 1 : calculate_sfx_volume(this.client, 
+                                                       old.pos);
 
-  this.animations[anim_id] = new DieAnimation(
-    old_entity.pos,
-    old_entity.angle,
-    old_entity.vel, 
-    function() {
-      delete self.animations[anim_id];
-    }
-  );
+  player.death_cause = death_cause;
+  player.killed_by = killer;
+
+  this.client.sound.play('ship_die', volume);
   
-  anim_id = this.anim_id_count++;
+  this.play_animation(new DieAnimation(old.pos, old.angle, old.vel));
+  this.play_animation(new ExplodeAnimation(old.pos));
   
-  this.animations[anim_id] = new ExplodeAnimation(
-    old_entity.pos,
-    function() {
-      delete self.animations[anim_id];
-    }
-  );
+  if (killer && killer.is_me && killer.entity) {
+    this.play_animation(new TextAnimation(killer.entity.pos, COLOR_ACCENT_1, '+1'));
+  }
   
   if (player.is_me) {
     if (death_cause == DEATH_CAUSE_KILLED) {
@@ -797,14 +914,7 @@ World.prototype.on_player_died = function(player, old_entity, death_cause, kille
 
   this.client.log(text);
   
-  // Calculate player position
-  var me = this.client.player;
-  me.position = this.no_players;
-  this.forEachPlayer(function(opponent) {
-    if (me.score > opponent.score) {
-      me.position--;
-    }
-  });
+  this.ranked_player_list = calculate_ranks(this);
 }
 
 /**
@@ -815,30 +925,90 @@ World.prototype.on_player_ready = function(player) {
 }
 
 /**
+ * Callback for player name changed
+ */
+World.prototype.on_player_name_changed = function(player, new_name, old_name) {
+  this.client.log('"' + old_name + '" is now known as "' + new_name + '"');
+  if (player.is_me) {
+    this.client.options.name = new_name;
+  }
+}
+
+/**
  * Callback for round state changed
  */
 World.prototype.on_round_state_changed = function(state, winners) {
-  this.winners = null;
+
   switch (state) {
     
     case ROUND_STARTING:
       this.client.viewport.set_camera_pos(vector_div(this.size, 2));
       break;
       
+    case ROUND_FINISHED:
+      var names = [];      
+      for (var i = 0; i < winners.length; i++) {
+         names.push(this.players[winners[i]].name);
+      }
+      this.winner_names = names.join(',');
+      break;
+      
   }
 };
 
+World.prototype.on_powerup_spawn = function(powerup) {
+  var volume = calculate_sfx_volume(this.client, powerup.pos);
+  this.client.sound.play('powerup_spawn', volume);
+  
+  this.play_animation(new PowerupSpawnAnimation(
+    powerup.pos, 
+    powerup.size,
+    powerup.color
+  ), function() {
+    powerup.visible = true;
+  });
+  
+}
+
+World.prototype.on_powerup_die = function(powerup, player) {
+
+  if (player.is_me) {
+    this.client.sound.play('powerup_die');
+  }
+  
+  this.play_animation(new TextAnimation(
+    powerup.pos,
+    get_powerup_color(powerup.powerup_type),
+    get_powerup_text(powerup.powerup_type)
+  ));
+  
+}
+
 World.prototype.on_after_init = function() {
   this.PACKET_HANDLERS = {};
-  this.PACKET_HANDLERS[WORLD + STATE] = this.set_round_state;
-  this.PACKET_HANDLERS[PLAYER + CONNECT] = this.add_player;
-  this.PACKET_HANDLERS[PLAYER + DISCONNECT] = this.remove_player;
-  this.PACKET_HANDLERS[PLAYER + READY] = this.set_player_ready;
-  this.PACKET_HANDLERS[PLAYER + SPAWN] = this.spawn_player;
-  this.PACKET_HANDLERS[PLAYER + DIE] = this.kill_player;
-  this.PACKET_HANDLERS[PLAYER + FIRE] = this.fire_player_canon;
-  this.PACKET_HANDLERS[PLAYER + STATE] = this.update_player_state;
-  this.PACKET_HANDLERS[PLAYER + COMMAND] = this.set_player_command;
+  this.PACKET_HANDLERS[OP_ROUND_STATE] = this.set_round_state;
+  this.PACKET_HANDLERS[OP_PLAYER_CONNECT] = this.add_player;
+  this.PACKET_HANDLERS[OP_PLAYER_DISCONNECT] = this.remove_player;
+  this.PACKET_HANDLERS[OP_PLAYER_INFO] = this.update_player_info;
+  this.PACKET_HANDLERS[OP_PLAYER_SPAWN] = this.spawn_player;
+  this.PACKET_HANDLERS[OP_PLAYER_DIE] = this.kill_player;
+  this.PACKET_HANDLERS[OP_PLAYER_FIRE] = this.fire_player_canon;
+  this.PACKET_HANDLERS[OP_PLAYER_STATE] = this.update_player_state;
+  this.PACKET_HANDLERS[OP_PLAYER_SAY] = this.player_say;
+  this.PACKET_HANDLERS[OP_POWERUP_SPAWN] = this.spawn_powerup;
+  this.PACKET_HANDLERS[OP_POWERUP_DIE] = this.kill_powerup;
+}
+
+World.prototype.play_animation = function(animation, callback) {
+  var id = this.anim_id_count++;
+
+  this.animations.push({
+    id: id,
+    anim: animation,
+    callback: callback || function() {}
+  });
+  
+  return id;
 }
 
 World.prototype.process_world_packet = function(msg) {;
@@ -851,9 +1021,40 @@ World.prototype.process_world_packet = function(msg) {;
   }
 }
 
-World.prototype.update_player_state = function(id, pos) {
+World.prototype.update_player_info = function(id, ping, ready, name) {
   var player = this.players[id];
-  player.entity.pos_sv = pos;
+  if (ping) {
+    if (player.ping) {
+      player.ping = parseInt(player.ping * 0.5 + ping * 0.5);
+    } else {
+      player.ping = ping;
+    }
+  }
+  if (ready) {
+    this.set_player_ready(id);
+  }
+  if (name) {
+    this.set_player_name(id, name);
+  }
+}
+
+World.prototype.update_player_state = function(id, pos, angle, action) {
+  var player = this.players[id];
+
+  if (pos) {
+    player.entity.pos_sv = pos;
+  }
+  if (!player.is_me) {
+    player.entity.angle = angle;
+  }
+  if (!player.is_me) {
+    player.action = action;
+  }
+}
+
+World.prototype.player_say = function(player_id, message) {
+  var player = this.players[player_id];
+  this.client.log(player.name + ': ' + message, player.color);
 }
 
 /**
@@ -861,9 +1062,10 @@ World.prototype.update_player_state = function(id, pos) {
  *  Draw all entites within viewport bounds.
  */
 World.prototype.draw = function(viewport, alpha) {
-  var entities  = this.entities, 
-      ctx       = viewport.ctx,
-      camera    = viewport.camera;
+  var entities    = this.entities,
+      animations  = this.animations,
+      ctx         = viewport.ctx,
+      camera      = viewport.camera;
   this.draw_grid(ctx, camera);
   for (var id in entities) {
     var entity = entities[id];
@@ -875,12 +1077,13 @@ World.prototype.draw = function(viewport, alpha) {
       ctx.restore();
     }
   }
-  for (var anim_id in this.animations) {
-    var anim = this.animations[anim_id],
-        point = viewport.translate(anim.pos);    
+  var index = animations.length;
+  while (index--) {
+    var job = animations[index],
+        point = viewport.translate(job.anim.pos);
     ctx.save();
     ctx.translate(point[0], point[1]);
-    anim.draw(ctx);
+    job.anim.draw(ctx);
     ctx.restore();
   }
 }
@@ -967,10 +1170,7 @@ Ship.prototype.on_after_init = function() {
 }
 
 Ship.prototype.world_update = function(t, dt) {
-  var old_pos = this.pos,
-      old_vel = this.vel,
-      old_ang = this.angle;
-  
+
   this.move(t, dt);
   
   if (Math.abs(this.pos[0] - this.pos_sv[0]) > 0.01 || 
@@ -1032,7 +1232,7 @@ Ship.prototype.draw = function(ctx) {
   
   if(!this.is_me){  
     ctx.rotate(-this.angle);
-    ctx.font = SHIP_FONT;
+    ctx.font = PLAYER_NAME_FONT;
   	ctx.fillStyle = 'rgb(' + this.player.color + ')';
     draw_label(ctx, 0, this.size[1] + 10, this.player.name, 'center', 100);	
   }
@@ -1090,6 +1290,123 @@ Wall.prototype.draw = function(ctx, world) {
 }
 
 /**
+ *  Draw's the Block instance.
+ */
+Block.prototype.draw = function(ctx, world) {
+  var connectors = this.connectors,
+      size       = this.size;
+  
+  ctx.strokeStyle = "rgba(200, 20, 20, 0.4)";
+  ctx.lineWidth = 2;
+  ctx.fillStyle = 'rgba(200, 20, 20, 0.1)';
+  ctx.fillRect(0, 0, this.size[0], this.size[1]);
+  
+  if (!(connectors & BLOCK_CONNECTOR_NORTH)) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(size[0], 0);
+    ctx.stroke();
+  }
+
+  if (!(connectors & BLOCK_CONNECTOR_EAST)) {
+    ctx.beginPath();
+    ctx.moveTo(size[0], 0);
+    ctx.lineTo(size[0], size[1]);
+    ctx.stroke();
+  }
+
+  if (!(connectors & BLOCK_CONNECTOR_SOUTH)) {
+    ctx.beginPath();
+    ctx.moveTo(0, size[1]);
+    ctx.lineTo(size[0], size[1]);
+    ctx.stroke();
+  }
+
+  if (!(connectors & BLOCK_CONNECTOR_WEST)) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, size[1]);
+    ctx.stroke();
+  }
+  
+  if(connectors == (BLOCK_CONNECTOR_EAST | BLOCK_CONNECTOR_NORTH)){
+    ctx.beginPath();
+    ctx.moveTo(size[0]-BLOCK_SPACING, 0);
+    ctx.lineTo(size[0], 0);
+    ctx.lineTo(size[0], BLOCK_SPACING);
+    ctx.stroke();
+  }
+  if(connectors == (BLOCK_CONNECTOR_EAST | BLOCK_CONNECTOR_SOUTH)){
+    ctx.beginPath();
+    ctx.moveTo(size[0], size[1]-BLOCK_SPACING);
+    ctx.lineTo(size[0], size[1]);
+    ctx.lineTo(size[0]-BLOCK_SPACING, size[1]);
+    ctx.stroke();
+  }
+  if(connectors == (BLOCK_CONNECTOR_WEST | BLOCK_CONNECTOR_NORTH)){
+    ctx.beginPath();
+    ctx.moveTo(0+BLOCK_SPACING, 0);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(0, BLOCK_SPACING);
+    ctx.stroke();
+  }
+  if(connectors == (BLOCK_CONNECTOR_WEST | BLOCK_CONNECTOR_SOUTH)){
+    ctx.beginPath();
+    ctx.moveTo(0+BLOCK_SPACING, size[1]);
+    ctx.lineTo(0, size[1]);
+    ctx.lineTo(0, size[1]-BLOCK_SPACING);
+    ctx.stroke();
+  }
+}
+
+Powerup.prototype.on_after_init = function() {
+  this.inner_radius = this.size[0]  / 1.8;
+  this.pulse = 0;
+  this.color = get_powerup_color(this.powerup_type);
+  this.ch = get_powerup_text(this.powerup_type)[0];
+  this.visible = false;
+}
+
+Powerup.prototype.update = function(t, dt) {
+  if (!this.visible) return;
+  
+  this.pulse += (dt * 6);
+  
+  if (this.pulse > 20) {
+    this.pulse = 0;
+  }
+}
+
+/**
+ *  Draws the Powerup instance
+ */
+Powerup.prototype.draw = function(ctx) {
+  if (!this.visible) return;
+  var color = this.color,
+      text_alpha = 1 - ((this.pulse * 8) / 100),
+      outer_alpha = 0.7 - ((this.pulse * 5) / 100),
+      inner_radius = this.inner_radius,
+      outer_radius = inner_radius + this.pulse;
+      
+  ctx.beginPath();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(' + color + ', 0.8)';    
+  ctx.arc(0, 0, inner_radius, 0, Math.PI / 180, true);
+  ctx.stroke();
+    
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(' + color + ', ' +  outer_alpha +')';    
+  ctx.arc(0, 0, outer_radius, 0, Math.PI / 180, true);
+  ctx.stroke();
+    
+  ctx.font = POWERUP_FONT;
+  ctx.fillStyle = 'rgba(' + color + ', ' + text_alpha + ')';
+  draw_label(ctx, 1, 2, this.ch, 'center', inner_radius);
+  
+}
+
+/**
  *  Creates a new instance of the ThrustAnimation class.
  */
 function ThrustAnimation() {
@@ -1097,15 +1414,14 @@ function ThrustAnimation() {
   particles.active = false;
   particles.position = Vector.create(0, 12);	
   particles.positionRandom = Vector.create( 0, 0 );
-  particles.gravity = Vector.create( 0.4, 0.2 );
-  particles.speed = 2;
-  particles.lifeSpan = 15;
-  particles.lifeSpan = 9;
-  particles.size = 2;
+  particles.gravity = Vector.create( 0.01, 0.01 );
+  particles.speed = 1.5;
+  particles.lifeSpan = 10;
+  particles.size = 1;
   particles.sizeRandom = 1;
-  particles.angle = 120;
+  particles.angle = 90;
   particles.angleRandom = 15;
-  particles.maxParticles = 120;
+  particles.maxParticles = 60;
   particles.init();
   this.particles = particles; 
 }
@@ -1193,7 +1509,7 @@ ShieldAnimation.prototype.draw = function(ctx) {
 /**
  *  Creates a new instance of the SpawnAnimation class.
  */
-function SpawnAnimation(pos, callback) {
+function SpawnAnimation(pos) {
   var particles = new cParticleSystem();
   particles.active = true;
   particles.position = Vector.create( 0, 0 );
@@ -1203,20 +1519,20 @@ function SpawnAnimation(pos, callback) {
   particles.startColourRandom = [80,20,20,0 ];
   particles.finishColourRandom = [60,10,10,0.1];
   particles.gravity = Vector.create( 0.01, 0.01 );
-  particles.sharpness = 80; 
-  particles.speed = 2;
-  particles.size = 2; 
-  particles.sizeRandom = 3;
-  particles.maxParticles = 250;
-  particles.duration = 1;
-  particles.lifeSpan = 2;
+  particles.sharpness = 60; 
+  particles.speed = 1;
+  particles.size = 1.5; 
+  particles.sizeRandom = 1;
+  particles.maxParticles = 120;
+  particles.duration = 0.8;
+  particles.lifeSpan = 1;
   particles.lifeSpanRandom = 1;
   particles.init();
   this.alpha = 0;
   this.ship_size = 0;
   this.pos = pos;
   this.particles = particles;
-  this.ondone = callback;
+  this.is_done = false;
 }
 
 /**
@@ -1233,7 +1549,7 @@ SpawnAnimation.prototype.update = function(t, dt) {
   }
   this.particles.update(5 * dt);
   if (this.particles.particleCount == 0) {
-    this.ondone();
+    this.is_done = true;
   }
 }
 
@@ -1253,7 +1569,7 @@ SpawnAnimation.prototype.draw = function(ctx) {
 /**
  *  Creates a new instance of the DieAnimation class.
  */
-function DieAnimation(pos, angle, vel, callback) {
+function DieAnimation(pos, angle, vel) {
   var cx = SHIP_WIDTH / 2, cy = SHIP_HEIGHT / 2;
   this.pieces = [
     [0, -(cy / 3), cx / 2, cy / 2, angle, Math.random()],
@@ -1266,7 +1582,7 @@ function DieAnimation(pos, angle, vel, callback) {
   this.pos = pos;
   this.vel = vel;
   this.angle = angle
-  this.ondone = callback;
+  this.is_done = false;
 }
 
 /**
@@ -1296,7 +1612,7 @@ DieAnimation.prototype.update = function(t, dt) {
       this.vel[1] = speedy;
       
     } else {
-      this.ondone();
+      this.is_done = true;
     }
   } 
   
@@ -1326,16 +1642,16 @@ DieAnimation.prototype.draw = function(ctx) {
 /**
  *  Creates a new instance of the ExplodeAnimation class.
  */
-function ExplodeAnimation(pos, callback) {
+function ExplodeAnimation(pos) {
   var particles = new cParticleSystem();
   particles.active = true;
   particles.position = Vector.create( 0, 0 );
   particles.positionRandom = Vector.create( 3, 3 );
   particles.gravity = Vector.create(0.01, 0.01);
   particles.sharpness = 60;
-  particles.size = 2.5; 
-  particles.sizeRandom = 2;
-  particles.maxParticles = 300;
+  particles.size = 1.5; 
+  particles.sizeRandom = 1;
+  particles.maxParticles = 150;
   particles.speed = 1;
   particles.duration = 1;
   particles.lifeSpan = 5;
@@ -1343,7 +1659,7 @@ function ExplodeAnimation(pos, callback) {
   particles.init();
   this.pos = pos;
   this.particles = particles;
-  this.ondone = callback;
+  this.is_done = false;
 }
 
 /**
@@ -1355,7 +1671,7 @@ function ExplodeAnimation(pos, callback) {
 ExplodeAnimation.prototype.update = function(t, dt) {
   this.particles.update(5 * dt);
   if (this.particles.particleCount == 0) {
-    this.ondone();
+    this.is_done = true;
   }
 }
 
@@ -1368,19 +1684,612 @@ ExplodeAnimation.prototype.draw = function(ctx) {
   this.particles.render(ctx);
 }
 
+/**
+ *  Creates a new instance of the TextAnimation class.
+ */
+function TextAnimation(pos, color, text) {
+  this.pos = pos;
+  this.color = color;
+  this.text = text;
+  this.value = 0;
+  this.is_done = false;
+}
 
 /**
- *  Draws a vertical bar 
- *  
+ *  Updates the TextAnimation instance.
+ *  @param {Number} t Current world time.
+ *  @param {Number} dt Current delta time,
+ *  @return {undefined} Nothing
  */
-function draw_v_bar(ctx, x, y, w, h, percent) {
-  ctx.lineWidth = 0.2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+TextAnimation.prototype.update = function(t, dt) {
+  this.value += dt * 60;
+  if (this.value >= 50) {
+    this.is_done = true;
+  }
+}
+
+/**
+ *  Draws the ExplodeAnimation instance on specified context.
+ *  @param {Context2D} ctx The context to draw on.
+ *  @return {undefined} Nothing
+ */
+TextAnimation.prototype.draw = function(ctx) {
+  var alpha = 1 - ((this.value * 5) / 100),
+      size = 6 + this.value;
+
+  ctx.fillStyle = 'rgba(' + this.color + ', ' + alpha + ')';
+  ctx.font = 'bold ' + size + 'px Arial';
+  draw_label(ctx, 0, 0, this.text, 'center');
+}
+
+/**
+ *  Constructor for PowerupSpawnAnimation instance.
+ */
+function PowerupSpawnAnimation(pos, size, color) {
+  this.alpha = 0;
+  this.color = color;
+  this.pos = pos;
+  this.size = size;
+  this.is_done = false;
+}
+
+/**
+ *  Updates the PowerupSpawnAnimation instance.
+ *  @param {Number} t Current world time.
+ *  @param {Number} dt Current delta time,
+ *  @return {undefined} Nothing
+ */
+PowerupSpawnAnimation.prototype.update = function(t, dt) {
+  this.alpha += dt;
+  if (this.alpha >= 0.8) {
+    this.is_done = true;
+  }
+}
+
+/**
+ *  Draws the PowerupSpawnAnimation instance on specified context.
+ *  @param {Context2D} ctx The context to draw on.
+ *  @return {undefined} Nothing
+ */
+PowerupSpawnAnimation.prototype.draw = function(ctx) {
+  var color = this.color,
+      alpha = this.alpha,
+      radius = this.size[0] / 1.8;
+      
   ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.fillRect(x + 2, (y + 2) + ((h - 4) - (h - 4) * (percent / 100)), (w - 4) , (h - 4) * (percent / 100));
-  ctx.stroke();   
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(' + color + ', ' + alpha + ')';
+  ctx.arc(0, 0, radius, 0, Math.PI / 180, true);
+  ctx.stroke();
+}
+
+/**
+ *  GUIPlayerHUD
+ */
+function GUIPlayerHUD(pos) {
+  this.pos = pos || [0, 0];
+  this.alpha = 0;
+  this.visible = true;
+  this.me = null;
+  this.world = null;
+}
+
+GUIPlayerHUD.prototype.is_visible = function() {
+  return !this.world || !this.me || this.me.dead || !this.me.entity ? 
+                                                            false : this.visible;
+}
+
+GUIPlayerHUD.prototype.draw = function(ctx, t) {
+  var me    = this.me,
+      world = this.world;
+  
+  var angle = (Math.PI * 2 * me.energy / 100);
+
+  ctx.beginPath();
+  ctx.lineWidth = 22;
+  ctx.strokeStyle = 'rgba(' + COLOR_BRIGHT + ', 0.03)';
+  ctx.arc(0, 0, 95, -Math.PI/2, -angle - Math.PI / 2, true);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(' + COLOR_BRIGHT + ', 0.05)';
+  ctx.arc(0, 0, 108, 0, Math.PI / 180, true);
+  ctx.stroke();
+  
+  if (me.has_powerup(POWERUP_SPEED)) {
+    var powerup = me.powerup_timers[POWERUP_SPEED];
+    var perc = (powerup.end - t) / (powerup.end - powerup.start);
+    angle = (Math.PI * 2 * perc)
+    
+    ctx.beginPath();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(' + POWERUP_SPEED_COLOR + ', 0.08)';
+    ctx.arc(0, 0, 81, Math.PI * 3 / 2, angle - Math.PI / 2, false);
+    ctx.stroke();    
+  }
+
+  if (me.has_powerup(POWERUP_RAPID)) {
+    var powerup = me.powerup_timers[POWERUP_RAPID];
+    var perc = (powerup.end - t) / (powerup.end - powerup.start);
+    angle = (Math.PI * 2 * perc);
+    
+    ctx.beginPath();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(' + POWERUP_RAPID_COLOR + ', 0.08)';
+    ctx.arc(0, 0, 75, Math.PI * 3 / 2, angle - Math.PI / 2, false);
+    ctx.stroke();
+  }
+
+  if (me.has_powerup(POWERUP_ENERGY)) {
+    var powerup = me.powerup_timers[POWERUP_ENERGY];
+    var perc = (powerup.end - t) / (powerup.end - powerup.start);
+    angle = (Math.PI * 2 * perc)
+    
+    ctx.beginPath();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(' + POWERUP_ENERGY_COLOR + ', 0.08)';
+    ctx.arc(0, 0, 69, Math.PI * 3 / 2, angle - Math.PI / 2, false);
+    ctx.stroke();
+  }
+
+  if (world.r_state == ROUND_RUNNING && world.ranked_player_list.length > 1) {
+    var ahead = world.ranked_player_list[0] == me ? 
+                    me.score - world.ranked_player_list[1].score :
+                    me.score - world.ranked_player_list[0].score;
+
+    if (ahead > 0) {
+      ahead = 'In lead +' + ahead;
+    } else if (ahead < 0) {
+      ahead = 'Behind ' + ahead;
+    } else {
+      ahead = 'Tied for the lead';
+    }
+    
+    ctx.font = HUD_FONT;
+    ctx.fillStyle = 'rgba(' + COLOR_BRIGHT + ', 0.3)';
+    draw_label(ctx, 0, 240, ahead, 'center');
+  }
+
+  // Draw ship and crosshair
+  if (me.entity) {
+    ctx.save();
+    me.entity.draw(ctx);
+    ctx.restore();
+    
+    ctx.rotate(me.entity.angle);  
+    ctx.fillStyle = 'rgba(' + COLOR_BRIGHT + ', 0.8)';
+    ctx.fillRect(0, -110, 1, 6);
+  }
+}
+
+/**
+ *  GUIMessageLog 
+ */
+function GUIMessageLog(pos, buffer, options) {
+  this.pos = pos || [0, 0];
+  this.alpha = 0;
+  this.visible = true;
+  this.buffer = buffer;
+  this.options = options;
+}
+
+GUIMessageLog.prototype.is_visible = function() {
+  return this.buffer == null ? false : this.visible;
+}
+
+GUIMessageLog.prototype.draw = function(ctx) {
+  var buffer = this.buffer,
+      index = buffer.length,
+      count = 0,
+      row = 0,
+      time = get_time(),
+      max = this.options.log_max_messages;
+
+  ctx.textBaseline = 'top';
+  ctx.font = MESSAGE_LOG_FONT;
+
+  while (index-- && ((buffer.length - 1) - index < max)) {
+    var message = buffer[index];
+    if (!message.disposed) {
+      var alpha = message.time > time ? 0.8 :
+           0.8 + (0 - ((time - message.time) / 1000));
+      if (alpha < 0.02) {
+        message.disposed = true;
+      } 
+      ctx.fillStyle = 'rgba(' + message.color + ',' + alpha + ')';
+      draw_label(ctx, 0, (row -= 12), message.text, 'left');
+    }
+  }  
+}
+
+/**
+ *  GUINetStat 
+ */
+function GUINetStat(pos, stats) {
+  this.pos = pos || [0, 0];
+  this.alpha = 0;
+  this.visible = false;
+  this.stats = stats || null;
+}
+
+GUINetStat.prototype.is_visible = function() {
+  return !this.stats.start_time ? false : this.visible;
+}
+
+GUINetStat.prototype.draw = function(ctx) {
+  var stats = this.stats;
+  ctx.font = STATS_FONT;
+  ctx.fillStyle = CANVAS_COLOR_BRIGHT;
+  var in_kps = round_number(stats.bps_in / 1024, 2);
+  var out_kps = round_number(stats.bps_out / 1024, 2);
+  var in_mps = round_number(stats.mps_in, 2);
+  var out_mps = round_number(stats.mps_out, 2);
+  var text = 'Netstat: in: ' + in_kps + 'kb/s, out: ' + out_kps + 'kb/s, ' +
+             'in: ' + in_mps + '/mps, out: ' + out_mps + '/mps';
+  draw_label(ctx, 0, 0, text, 'left');
+}
+
+/**
+ *  GUIFpsCounter 
+ */
+function GUIFpsCounter(pos, stats) {
+  this.pos = pos || [0, 0];
+  this.alpha = 0;
+  this.visible = true;
+  this.stats = stats || null;
+}
+
+GUIFpsCounter.prototype.is_visible = function() {
+  return this.visible;
+}
+
+GUIFpsCounter.prototype.draw = function(ctx) {
+  ctx.font = STATS_FONT;
+  ctx.fillStyle = CANVAS_COLOR_BRIGHT;
+  draw_label(ctx, 0, 0, 'FPS count: ' + parseInt(this.stats.average_fps), 
+             'right');
+}
+
+/**
+ *  GUIWarmupNotice 
+ */
+function GUIWarmupNotice(pos) {
+  this.pos = pos || [0, 0];
+  this.alpha = 0;
+  this.visible = true;
+  this.pulse = 0;
+  this.world = null;
+  this.me = null;
+}
+
+GUIWarmupNotice.prototype.is_visible = function() {
+  return !this.world || this.world.r_state != ROUND_WARMUP || !this.me || 
+         this.me.dead ? false : this.visible;
+}
+
+GUIWarmupNotice.prototype.draw = function(ctx) {
+  var world = this.world,
+      me = this.me,
+      text = '',
+      pulse = false;
+      
+  if (world.no_players == 1) {
+    text = 'Waiting for more players to join...';
+  } else if (!me.ready) {
+    text = 'Press (r) when ready';
+    pulse = true;
+  } else {
+    var no = Math.ceil((world.no_players * 0.6) - world.no_ready_players);
+    text = 'Waiting for ' + no + ' player' + (no == 1 ? '' : 's') + 
+           ' to press ready';
+  }
+
+  ctx.font = WARMUP_NOTICE_FONT;
+  ctx.fillStyle = CANVAS_COLOR_ACCENT_1;
+  
+  if (pulse) {
+    var alpha = Math.abs(Math.sin((this.pulse += 0.08)));
+    if (alpha < 0.1) {
+      alpha = 0.1;
+    } 
+    ctx.fillStyle = 'rgba(' + COLOR_ACCENT_1 + ',' + alpha + ')';
+  }
+  
+  draw_label(ctx, 0, 0, text, 'center');
+}
+
+/**
+ *  GUIScoreboard 
+ */
+function GUIScoreboard(pos) {
+  this.pos = pos;
+  this.size = null;
+  this.table_width = null;
+  this.table_height = null;
+  this.margin = null;
+  this.alpha = 0;
+  this.visible = false;
+  this.pulse = 0;
+  this.world = null;
+  this.me = null
+}
+
+GUIScoreboard.prototype.is_visible = function() {
+  return this.visible || (this.world && this.me && this.me.dead) || false;
+}
+
+GUIScoreboard.prototype.set_size = function(size) {
+  this.size = size;
+  this.table_width = this.size[0] * 0.8;
+  this.margin = (this.size[0] - this.table_width) / 2;
+  this.table_height = this.size[1] - this.margin;
+}
+
+GUIScoreboard.prototype.draw = function(ctx) {
+  var world = this.world,
+      me = this.me,
+      x = this.margin,
+      y = this.margin;
+  
+  if (!world) return;
+  
+  var title  = '',
+      notice = null,
+      timer  = 0;
+
+  // Shading
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+  ctx.fillRect(0, 0, this.size[0], this.size[1]);
+
+  ctx.fillStyle = CANVAS_COLOR_ACCENT_1;
+
+  switch (world.r_state) {
+    case ROUND_WARMUP:
+      title = 'Warmup round';
+      break;
+      
+    case ROUND_STARTING:
+      title = 'Prepare your self, game starts in...';
+      break;
+
+    case ROUND_RUNNING:
+      if (me.dead) {
+        title = me.death_cause == DEATH_CAUSE_KILLED ?
+                                  'You where killed by ' + me.killed_by.name :
+                                  'You took your own life';
+                                  
+        // Respawn timer
+        timer = me.respawn_time - world.tick;
+        notice = 'Respawn in ' + format_timer(timer, world.delta) + ' sec';
+
+      } else {
+        title = 'Your rank is ' + me.rank + ' of ' + world.no_players;
+      }
+      break;
+      
+    case ROUND_FINISHED:
+      title = 'Round won by ' + world.winner_names + ', next map starts in...';
+      break;
+  }
+  
+  ctx.font = SCOREBOARD_TITLE_FONT;
+  draw_label(ctx, x, y, title , 'left');
+  
+  if (world.r_timer) {
+    timer = (world.r_state == ROUND_RUNNING) ? world.r_timer :
+                                       world.r_timer - world.tick; 
+    draw_label(ctx, x + this.table_width, y, 
+               format_timer(timer, world.delta), 'right');
+  }
+  
+  // Draw heads-up notice
+  if (notice) {
+    ctx.font = SCOREBOARD_NOTICE_FONT;
+    draw_label(ctx, this.size[0] / 2, this.table_height + this.margin / 2, 
+                    notice, 'center');
+  }
+  
+  ctx.font = SCOREBOARD_SUB_FONT;
+  draw_label(ctx, x, (y += 20), world.map_name + 
+                                ', round limit: ' + world.rules.round_limit);
+                                        
+  draw_label(ctx, x + this.table_width, y, world.no_players + ' / ' +
+                                 world.max_players + ' players', 'right');
+  
+  // Draw table header
+  draw_label(ctx, (x += (SCOREBOARD_PAD * 7)), (y += 60), 'Player name');
+  draw_label(ctx, (x = this.margin + this.table_width), y, 'Score', 
+                  'right', 50);
+  draw_label(ctx, (x -= 50), y, 'Kills', 'right', 50);
+  draw_label(ctx, (x -= 50), y, 'Deaths', 'right', 50);
+  draw_label(ctx, (x -= 50), y, 'Time', 'right', 50);
+  draw_label(ctx, (x -= 50), y, 'Ping', 'right', 50);
+  
+  var players = world.ranked_player_list,
+      row = 0;
+    
+  x = this.margin;    
+  y += 10;
+  
+  // Draw each table row
+  while (row < players.length && y < this.table_height) {
+    var player = players[row++];
+    this.draw_row(ctx, [x, y], player);
+    y += 28;
+  }
+  
+}
+
+GUIScoreboard.prototype.draw_row = function(ctx, pos, player) {
+  var x = pos[0],
+      y = pos[1],
+      t = this.world.tick,
+      dt = this.world.delta;      
+
+  var name = player.name + (this.world.r_state == ROUND_RUNNING &&
+                            player.dead ? ' (dead)' : ''),
+      score = player.score,
+      deaths = player.deaths + '(' + player.suicides + ')',
+      kills = player.kills,
+      time = format_timer(t - player.time, dt),
+      ping = player.ping || '--',
+      rank = player.rank;
+      
+  ctx.textBaseline = 'top';
+
+  switch (this.world.r_state) {
+
+    case ROUND_WARMUP:
+    case ROUND_STARTING:
+      score = kills = deaths = time = '--';
+      ctx.font = SCOREBOARD_ROW_A_FONT;
+      if (player.ready) {
+        ctx.fillStyle = 'rgba(' + COLOR_ACCENT_2 + ', 0.4)';
+        rank = SCOREBOARD_READY_CHAR;
+      } else {
+        ctx.fillStyle = 'rgba(' + COLOR_DUST + ', 0.4)';
+        rank = SCOREBOARD_NOT_READY_CHAR;
+      }
+      break;
+      
+    case ROUND_RUNNING:
+    case ROUND_FINISHED:
+      ctx.font = SCOREBOARD_ROW_FONT;
+      ctx.fillStyle = 'rgba(' + player.color + ', 0.4)';
+      break;
+  }
+
+  ctx.fillRect(x, y, SCOREBOARD_PAD * 4, 22);
+  
+  x +=  SCOREBOARD_PAD;
+  y += SCOREBOARD_MAR;
+
+  ctx.fillStyle = CANVAS_COLOR_BRIGHT;
+  draw_label(ctx, x + SCOREBOARD_PAD, y, rank, 'center');
+
+  ctx.font = SCOREBOARD_ROW_FONT;
+  ctx.fillStyle = player.is_me ? CANVAS_COLOR_BRIGHT : CANVAS_COLOR_DAWN;
+  
+  draw_label(ctx, (x += SCOREBOARD_PAD * 6), y, name);
+  draw_label(ctx, (x  = pos[0] + (this.table_width)), y, score, 'right', 50);
+  draw_label(ctx, (x -= 50), y, kills, 'right', 50);
+  draw_label(ctx, (x -= 50), y, deaths, 'right', 50);
+  draw_label(ctx, (x -= 50), y, time, 'right', 50);
+  draw_label(ctx, (x -= 50), y, ping, 'right', 50);  
+}
+
+function GUIPrompt(pos) {
+  this.pos = pos;
+  this.size = null;
+  this.alpha = 0;
+  this.visible = false;
+  this.buffer = '';
+}
+
+GUIPrompt.prototype.is_visible = function() {
+  return this.visible;
+}
+
+GUIPrompt.prototype.set_size = function(size) {
+  this.size = size;
+  this.prompt_width = this.size[0] * 0.8;
+  this.margin = (this.size[0] - this.prompt_width) / 2;
+  this.oncommand = null;
+  this.onchat = null;
+}
+
+GUIPrompt.prototype.handle_key_stroke = function(char) {
+  switch (char) {
+    case 8:
+      this.buffer = this.buffer.substr(0, this.buffer.length - 1);
+      break;
+    case 13:
+      if (this.buffer.length > 1 && this.buffer[0] == '/') {
+        var args = [],
+            word = '',
+            smode = false,
+            count = 0;
+
+        for (var i = 1; i < this.buffer.length; i++) {
+          var char = this.buffer[i];
+          if (char == '"') {
+            smode = !smode;
+          } else if (char == ' ' && !smode) {
+            args.push(word),
+            word = '';
+          } else {
+            word += char;
+          }
+        }
+        
+        if (word.length) {
+          args.push(word);
+        }
+
+        this.oncommand.apply(null, args);
+      } else if (this.buffer.length) {
+        this.onchat(this.buffer);
+      }
+      this.buffer = '';
+      break;
+      
+    default:
+      this.buffer += String.fromCharCode(char);
+      break;
+  }
+}
+
+GUIPrompt.prototype.draw = function(ctx) {
+  ctx.strokeStyle = CANVAS_COLOR_ACCENT_1;
+  ctx.fillStlye = 'rgba(' + COLOR_DARK + ', 0.8)';
+  ctx.fillRect(this.margin, 0, this.size[0] - (this.margin * 2), this.size[1]);
+  ctx.strokeRect(this.margin, 0, this.size[0] - (this.margin * 2), this.size[1]);
+  
+  ctx.strokeStyle = null;
+  ctx.fillStyle = CANVAS_COLOR_ACCENT_1;
+  ctx.font = PROMPT_FONT;
+  ctx.textBaseline = 'top';
+
+  var clip_width = this.size[0] - (this.margin * 2) - 8;
+  var text_width = ctx.measureText(this.buffer + PROMPT_CURSOR).width;
+  var text_pos = text_width > clip_width ? 
+                    (this.margin + 4) - (text_width - clip_width) : 
+                    (this.margin + 4);
+  ctx.beginPath();
+  ctx.rect(this.margin + 4, 4, clip_width, this.size[1] - 8);
+  ctx.clip();
+  draw_label(ctx, text_pos, 4, this.buffer + PROMPT_CURSOR);
+}
+
+function get_powerup_color(type) {
+  switch (type) {
+
+    case POWERUP_SPEED:
+      return POWERUP_SPEED_COLOR;
+
+    case POWERUP_RAPID:
+      return POWERUP_RAPID_COLOR;
+      
+    case POWERUP_ENERGY:
+      return POWERUP_ENERGY_COLOR;
+
+  }
+}
+
+function get_powerup_text(type) {
+  switch (type) {
+
+    case POWERUP_SPEED:
+      return 'Speed x1.3';
+
+    case POWERUP_RAPID:
+      return 'Rapid fire';
+      
+    case POWERUP_ENERGY:
+      return 'Energy boost';
+
+  }
 }
 
 function draw_triangle(ctx, centerx, centery) {
@@ -1399,6 +2308,50 @@ function draw_triangle(ctx, centerx, centery) {
 function draw_label(ctx, x, y, text, align, width) {
   ctx.textAlign = align || 'left';
   ctx.fillText(text, x, y, width || 0);
+}
+
+function calculate_sfx_volume(client, pos) {
+  var midpoint = client.viewport.camera.midpoint,
+      distance = distance_between(midpoint, pos);
+  return Math.abs(1 - ((distance / 4) / 100));
+}
+
+function calculate_ranks(world) {
+  var ranked_list = [];
+  for (var id in world.players) {
+    ranked_list.push(world.players[id]);
+  }
+  ranked_list.sort(function(player, opponent) { 
+    if (player.score == opponent.score) {
+      return 0;
+    } 
+    return player.score > opponent.score ? -1 : 1; 
+  });
+  
+  var index = ranked_list.length;
+  
+  while (index--) {
+    ranked_list[index].rank = index + 1;
+  }
+  return ranked_list;
+}
+
+function format_timer(value, delta) {
+  var seconds = parseInt(value / (delta * 60));
+      minutes = seconds < 0 ? 0 : parseInt(seconds / 60);
+      
+  seconds = seconds < 0 ? 0 : seconds - minutes * 60;
+
+  return minutes + ':' + (seconds < 10 ? '0' + seconds : seconds);
+}
+
+/**
+ *  Returns a random value from specified Array
+ *  @param {Array} src Source array.
+ *  @return {Object} The value
+ */
+function get_random_value(src) {
+  return src[Math.floor(Math.random() * src.length)];
 }
 
 /**
